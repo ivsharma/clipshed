@@ -1,0 +1,41 @@
+{
+  "name": "clipshed",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first video range clipper: fetch only the section you need as MP4, MP3, or both.",
+  "license": "MIT",
+  "keywords": [
+    "youtube",
+    "youtube-downloader",
+    "video-clipper",
+    "time-range",
+    "yt-dlp",
+    "ffmpeg",
+    "local-first",
+    "react",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-binaries.ps1",
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web",
+    "start": "npm run start -w server",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.app.json --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
