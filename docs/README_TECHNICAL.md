@@ -232,6 +232,9 @@ Run `npm run setup` again. The app expects `bin/ffmpeg.exe` and `bin/ffprobe.exe
 **Cookies from Chrome fail**  
 Close Chrome completely, then retry. Chrome can lock its cookie database while running. Firefox often works without closing. A `cookies.txt` file is the most reliable option.
 
+**Opera GX**<br>
+yt-dlp’s browser mode only reads **Opera Stable**, not Opera GX. Export a `cookies.txt` file from Opera GX and choose **Cookies file** in Settings instead.
+
 **Port 3000 or 5173 is already in use**  
 Stop the other process, or set `PORT` in `.env` for the server. The Vite port is configured in `web/vite.config.ts`.
 
@@ -285,4 +288,4 @@ Clipshed is not affiliated with YouTube, Instagram, Facebook, or any other platf
 
 ## Disclaimer
 
-This is a local, personal-use tool. Download only content you own or have permission to download. Downloading YouTube videos may violate YouTube’s Terms of Service and copyright law. Do not expose this app as a public service, and do not use it to bypass DRM, paywalls, or access controls.
+This is a local, personal-use tool. Download only content you have the right to use, and follow each site’s terms of service and copyright law. Do not expose this app as a public service, and do not use it to bypass DRM, paywalls, or access controls.

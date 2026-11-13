@@ -1,17 +1,5 @@
-import {
-  ChevronDown,
-  FileAudio,
-  FileVideo,
-  Info,
-  Layers,
-  type LucideIcon,
-} from "lucide-react";
-import {
-  formatBytes,
-  type JobKind,
-  type ProbeResult,
-} from "@clipshed/shared";
-import { cn } from "../lib/cn";
+import { ChevronDown, FileAudio, FileVideo, Info, Layers, type LucideIcon } from "lucide-react";
+import { formatBytes, type JobKind, type ProbeResult } from "@clipshed/shared";
 
 interface FormatPickerProps {
   video: ProbeResult;
@@ -28,30 +16,16 @@ interface FormatPickerProps {
 
 interface FormatTab {
   id: JobKind;
+  index: string;
   title: string;
   subtitle: string;
   icon: LucideIcon;
 }
 
 const TABS: FormatTab[] = [
-  {
-    id: "mp4",
-    title: "MP4 video",
-    subtitle: "Video + audio",
-    icon: FileVideo,
-  },
-  {
-    id: "mp3",
-    title: "MP3 audio",
-    subtitle: "Audio only",
-    icon: FileAudio,
-  },
-  {
-    id: "both",
-    title: "Both",
-    subtitle: "MP4 + MP3",
-    icon: Layers,
-  },
+  { id: "mp4", index: "01", title: "MP4", subtitle: "Video + audio", icon: FileVideo },
+  { id: "mp3", index: "02", title: "MP3", subtitle: "Audio only", icon: FileAudio },
+  { id: "both", index: "03", title: "Both", subtitle: "MP4 + MP3", icon: Layers },
 ];
 
 const BITRATES = [128, 192, 256, 320];
@@ -68,15 +42,17 @@ export function FormatPicker({
   estimatedAudioSize,
   selectedDuration,
 }: FormatPickerProps) {
-  const selectedQuality =
-    video.qualities.find((quality) => quality.height === height) ??
-    video.qualities[0];
-
+  const selectedQuality = video.qualities.find((quality) => quality.height === height) ?? video.qualities[0];
   const canVideo = video.qualities.length > 0;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="mono-label">01 / Output</span>
+        <span className="font-mono text-[11px] text-[var(--ink-mute)]">SELECT ONE</span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const selected = kind === tab.id;
@@ -90,29 +66,28 @@ export function FormatPicker({
               aria-selected={selected}
               disabled={disabled}
               onClick={() => onKindChange(tab.id)}
-              className={cn(
-                "group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition",
+              className={[
+                "group flex items-start gap-3 border p-3 text-left transition",
                 selected
-                  ? "border-orange-400/35 bg-orange-400/[0.08] shadow-[0_0_0_1px_rgba(249,115,22,0.08)_inset]"
-                  : "border-white/8 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]",
-                disabled && "cursor-not-allowed opacity-45",
-              )}
+                  ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper-raised)]"
+                  : "border-[var(--line-strong)] bg-[var(--paper-raised)] text-[var(--ink)] hover:border-[var(--red)]",
+                disabled ? "cursor-not-allowed opacity-40" : "",
+              ].join(" ")}
             >
               <span
-                className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                  selected
-                    ? "bg-gradient-to-br from-red-500 to-orange-500 text-white"
-                    : "bg-white/6 text-zinc-400",
-                )}
+                className={[
+                  "font-mono text-[11px] font-bold",
+                  selected ? "text-[var(--red)]" : "text-[var(--red)]",
+                ].join(" ")}
               >
-                <Icon className="h-5 w-5" />
+                {tab.index}
               </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-zinc-100">
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Icon className="h-3.5 w-3.5" />
                   {tab.title}
                 </span>
-                <span className="block truncate text-[11px] text-zinc-500">
+                <span className={selected ? "mt-0.5 block text-[11px] text-[#cfc9bc]" : "mt-0.5 block text-[11px] text-[var(--ink-mute)]"}>
                   {disabled ? "No video stream" : tab.subtitle}
                 </span>
               </span>
@@ -121,128 +96,94 @@ export function FormatPicker({
         })}
       </div>
 
-      {kind !== "mp3" ? (
-        <div className="space-y-2.5">
-          {kind === "both" ? (
-            <div className="flex items-center gap-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
-              <FileVideo className="h-3.5 w-3.5 text-orange-400/70" />
-              Video output
+      <div className="mt-6 space-y-2">
+        {kind !== "mp3" ? (
+          <>
+            {kind === "both" ? <div className="mono-label pt-1 text-[var(--red)]">Video output</div> : null}
+            <div className="flex items-center justify-between">
+              <label htmlFor="quality" className="mono-label">Quality</label>
+              {estimatedVideoSize ? (
+                <span className="font-mono text-[11px] text-[var(--ink-mute)]">
+                  ~{formatBytes(estimatedVideoSize)} / {selectedDuration}
+                </span>
+              ) : null}
             </div>
-          ) : null}
+            <div className="relative">
+              <select
+                id="quality"
+                value={height ?? selectedQuality?.height ?? ""}
+                onChange={(event) => onHeightChange(Number(event.target.value))}
+                className="field h-11 appearance-none pl-3 pr-9 text-[13px]"
+              >
+                {video.qualities.map((quality) => (
+                  <option key={quality.height} value={quality.height}>
+                    {quality.label} · {quality.codecs.join(" / ")}
+                    {quality.approxSize ? ` · ~${formatBytes(quality.approxSize)}` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-mute)]" />
+            </div>
 
-          <label
-            className="block text-xs font-medium text-zinc-400"
-            htmlFor="quality"
-          >
-            Quality
-          </label>
-          <div className="relative">
-            <select
-              id="quality"
-              value={height ?? selectedQuality?.height ?? ""}
-              onChange={(event) => onHeightChange(Number(event.target.value))}
-              className="field h-12 appearance-none pl-4 pr-10 text-sm"
-            >
-              {video.qualities.map((quality) => (
-                <option key={quality.height} value={quality.height}>
-                  {quality.label} · {quality.codecs.join(" / ")}
-                  {quality.approxSize
-                    ? ` · ~${formatBytes(quality.approxSize)}`
-                    : ""}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          </div>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedQuality?.h264 ? (
+                <span className="badge badge-success">H.264</span>
+              ) : (
+                <span className="badge badge-accent">{selectedQuality?.codecs.join(" / ") ?? "Modern codec"}</span>
+              )}
+              {selectedQuality && selectedQuality.fps >= 50 ? <span className="badge">{Math.round(selectedQuality.fps)} FPS</span> : null}
+              {selectedQuality ? <span className="badge">{selectedQuality.label}</span> : null}
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {selectedQuality?.h264 ? (
-              <span className="badge badge-success">
-                H.264 · best compatibility
-              </span>
-            ) : (
-              <span className="badge badge-accent">
-                {selectedQuality?.codecs.join(" / ") ?? "Modern codec"}
-              </span>
-            )}
-            {selectedQuality && selectedQuality.fps >= 50 ? (
-              <span className="badge">
-                {Math.round(selectedQuality.fps)} fps
-              </span>
+            {selectedQuality && !selectedQuality.h264 ? (
+              <p className="flex items-start gap-2 border-l-2 border-l-[var(--amber)] bg-[var(--paper)] px-3 py-2 text-[12px] leading-relaxed text-[var(--ink-soft)]">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                VP9/AV1 works in MP4, but older players may not. Choose 1080p or lower for H.264.
+              </p>
             ) : null}
-            {estimatedVideoSize ? (
-              <span className="badge badge-accent">
-                ~{formatBytes(estimatedVideoSize)} video · {selectedDuration}
-              </span>
-            ) : null}
-          </div>
+          </>
+        ) : null}
 
-          {selectedQuality && !selectedQuality.h264 ? (
-            <p className="flex items-start gap-2 rounded-xl border border-amber-400/15 bg-amber-400/[0.05] px-3 py-2 text-[11px] leading-relaxed text-amber-200/70">
+        {kind !== "mp4" ? (
+          <>
+            <div className="h-px bg-[var(--line)]" />
+            {kind === "both" ? <div className="mono-label pt-1 text-[var(--red)]">Audio output</div> : null}
+            <div className="flex items-center justify-between">
+              <label htmlFor="bitrate" className="mono-label">MP3 bitrate</label>
+              {estimatedAudioSize ? (
+                <span className="font-mono text-[11px] text-[var(--ink-mute)]">
+                  ~{formatBytes(estimatedAudioSize)} / {selectedDuration}
+                </span>
+              ) : null}
+            </div>
+            <div className="relative">
+              <select
+                id="bitrate"
+                value={bitrate}
+                onChange={(event) => onBitrateChange(Number(event.target.value))}
+                className="field h-11 appearance-none pl-3 pr-9 text-[13px]"
+              >
+                {BITRATES.map((value) => (
+                  <option key={value} value={value}>
+                    {value} kbps{value === 192 ? " · recommended" : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-mute)]" />
+            </div>
+
+            <p className="flex items-start gap-2 border-l-2 border-l-[var(--line-strong)] bg-[var(--paper)] px-3 py-2 text-[12px] leading-relaxed text-[var(--ink-mute)]">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              This quality uses VP9/AV1. It can be muxed into MP4, but older
-              players may not play it. Pick 1080p or lower for H.264.
+              The source audio is already compressed. 192 kbps is a sensible default.
             </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {kind !== "mp4" ? (
-        <div className="space-y-2.5">
-          {kind === "both" ? (
-            <>
-              <div className="h-px bg-white/5" />
-              <div className="flex items-center gap-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
-                <FileAudio className="h-3.5 w-3.5 text-orange-400/70" />
-                Audio output
-              </div>
-            </>
-          ) : null}
-
-          <label
-            className="block text-xs font-medium text-zinc-400"
-            htmlFor="bitrate"
-          >
-            MP3 bitrate
-          </label>
-          <div className="relative">
-            <select
-              id="bitrate"
-              value={bitrate}
-              onChange={(event) => onBitrateChange(Number(event.target.value))}
-              className="field h-12 appearance-none pl-4 pr-10 text-sm"
-            >
-              {BITRATES.map((value) => (
-                <option key={value} value={value}>
-                  {value} kbps {value === 192 ? "· recommended" : ""}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="badge">MP3 · 48 kHz</span>
-            {estimatedAudioSize ? (
-              <span className="badge badge-accent">
-                ~{formatBytes(estimatedAudioSize)} audio · {selectedDuration}
-              </span>
-            ) : null}
-          </div>
-
-          <p className="flex items-start gap-2 rounded-xl border border-white/6 bg-white/[0.025] px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Source audio is already compressed. 192 kbps is a good balance;
-            320 kbps mostly increases file size.
-          </p>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </div>
 
       {kind === "both" ? (
-        <p className="flex items-start gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.045] px-3 py-2 text-[11px] leading-relaxed text-emerald-200/60">
+        <p className="mt-4 flex items-start gap-2 border border-[var(--green)] px-3 py-2 text-[12px] leading-relaxed text-[var(--green)]">
           <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          One section download. The MP3 is extracted from the same source, so
-          you get both files without downloading the range twice.
+          One range download. The MP3 is extracted from the same source.
         </p>
       ) : null}
     </div>

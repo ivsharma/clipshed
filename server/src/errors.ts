@@ -112,6 +112,12 @@ const RULES: Rule[] = [
     when: has("http error 429", "too many requests", "rate-limit reached"),
   },
   {
+    code: "OPERA_GX_UNSUPPORTED",
+    message:
+      "yt-dlp's Opera mode only reads Opera Stable. Opera GX uses a different folder. Export a cookies.txt file and choose Cookies file in Settings.",
+    when: has("could not find opera cookies database"),
+  },
+  {
     code: "COOKIES_ERROR",
     message:
       "Could not read cookies from that browser. Close the browser and try again, or export a cookies.txt file.",

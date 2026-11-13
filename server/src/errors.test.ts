@@ -10,6 +10,7 @@ describe("mapYtDlpError", () => {
     ["ERROR: login required to view this post", "LOGIN_REQUIRED"],
     ["ERROR: [Instagram] rate-limit reached", "RATE_LIMITED"],
     ["ERROR: This content isn't available right now", "UNAVAILABLE"],
+    ['ERROR: could not find opera cookies database in "C:\\Users\\me\\AppData\\Roaming\\Opera Software\\Opera Stable"', "OPERA_GX_UNSUPPORTED"],
   ])("maps %s to %s", (stderr, code) => {
     expect(mapYtDlpError(stderr).code).toBe(code);
   });

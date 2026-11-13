@@ -264,7 +264,7 @@ export default function App() {
     <div className="min-h-screen pb-8">
       <Header health={health} onOpenSettings={openSettings} onHome={handleReset} />
 
-      <main className="mx-auto w-full max-w-5xl px-4 pt-10 sm:px-6 sm:pt-14">
+      <main className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 sm:pt-12">
         {error ? (
           <div className="mb-5">
             <ErrorBanner error={error} onDismiss={() => setError(null)} />
@@ -288,8 +288,8 @@ export default function App() {
                 </div>
 
                 {probe.isLive ? (
-                  <div className="flex items-start gap-2.5 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] px-4 py-3 text-xs leading-relaxed text-amber-200/75">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="flex items-start gap-2.5 border border-[var(--line-strong)] border-l-4 border-l-[var(--amber)] bg-[var(--paper-raised)] px-4 py-3 text-xs leading-relaxed text-[var(--ink-soft)]">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--amber)]" />
                     This is an active live stream. Wait until it ends, then paste the replay link.
                   </div>
                 ) : null}
@@ -312,7 +312,7 @@ export default function App() {
                         selectedDuration={selectedDurationLabel(probe, selection)}
                       />
 
-                      <div className="h-px bg-white/5" />
+                      <div className="h-px bg-[var(--line)]" />
 
                       <RangeSelector
                         duration={probe.duration}
@@ -365,11 +365,13 @@ export default function App() {
         />
       </div>
 
-      <footer className="mx-auto w-full max-w-5xl px-4 pb-6 text-center sm:px-6">
-        <p className="mx-auto max-w-2xl text-[10px] leading-relaxed text-zinc-600">
-          Local-first · files stay on your machine. Use only for content you own or have permission to download.
-          Each site&apos;s terms of service and copyright rules apply.
-        </p>
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-6 sm:px-6">
+        <div className="flex flex-col gap-2 border-t border-[var(--line-strong)] pt-4 font-mono text-[10px] leading-relaxed tracking-[0.05em] text-[var(--ink-mute)] sm:flex-row sm:items-center sm:justify-between">
+          <span>CLIPSHED / LOCAL-FIRST / NO UPLOADS</span>
+          <span className="max-w-xl sm:text-right">
+            DOWNLOAD ONLY CONTENT YOU HAVE THE RIGHT TO USE. RESPECT EACH SITE&apos;S TERMS OF SERVICE AND COPYRIGHT LAW.
+          </span>
+        </div>
       </footer>
 
       <SettingsDialog
@@ -383,8 +385,8 @@ export default function App() {
       />
 
       {toast ? (
-        <div className="animate-fade-in fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-xs font-medium text-emerald-200 shadow-2xl backdrop-blur">
-          <CheckCircle className="h-4 w-4" />
+        <div className="animate-fade-in fixed bottom-5 right-5 z-[60] flex items-center gap-2 border border-[var(--ink)] bg-[var(--ink)] px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--paper-raised)] shadow-[4px_4px_0_var(--red)]">
+          <CheckCircle className="h-4 w-4 text-[var(--red)]" />
           {toast}
         </div>
       ) : null}

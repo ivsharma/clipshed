@@ -94,7 +94,7 @@ The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 ## Disclaimer
 
-Clipshed is a local, personal-use tool. Download only content you own or have permission to use, and follow each platform's terms and copyright rules. Don't use it to bypass DRM or access controls, and don't host it as a public service. Not affiliated with YouTube, Meta, or any other platform.
+Clipshed is a local, personal-use tool. Download only content you have the right to use, and follow each site's terms of service and copyright law. Don't use it to bypass DRM or access controls, and don't host it as a public service. Not affiliated with YouTube, Meta, or any other platform.
 
 ## License
 
