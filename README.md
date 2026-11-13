@@ -25,7 +25,7 @@ Most downloaders fetch the entire video, then make you trim it afterward. Clipsh
 |---|---|---|
 | **YouTube** | Stable | Watch links, `youtu.be`, Shorts, embeds, livestream replays |
 | **Facebook** | Experimental | `watch` links, reels, page videos, `fb.watch`; some posts need cookies |
-| **Instagram** | Experimental | Posts, reels, IGTV; most content needs cookies from a signed-in browser |
+| **Instagram** | Experimental | Posts, reels; some content needs cookies from a signed-in browser |
 
 Facebook and Instagram support depends on yt-dlp's extractors. See [Limitations](docs/README_TECHNICAL.md#limitations) before relying on them.
 
@@ -52,21 +52,6 @@ npm start
 
 Open **http://127.0.0.1:3000**. Or use `start.ps1`.
 
-## How it works
-
-Clipshed asks yt-dlp for only the selected section with `--download-sections`:
-
-```text
-yt-dlp --download-sections "*00:15:00.000-00:20:00.000" ...
-```
-
-- **MP4:** the selected video and audio ranges are downloaded and muxed.
-- **MP3:** the audio range is downloaded and converted to MP3.
-- **Both:** the MP4 section is downloaded once, then ffmpeg extracts the MP3 from it.
-- **Fast cut** copies streams at keyframes; **Exact cut** re-encodes at the cut points for frame accuracy.
-
-The app never downloads the full video just to trim it. For a 5-minute range, only that range is fetched.
-
 ## Configuration
 
 Open the gear icon to configure cookies (for age-restricted or login-required posts), H.264 preference, and yt-dlp updates. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.
@@ -78,11 +63,6 @@ Cookies stay on this machine and are never returned by the API or written to job
 The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 - [Architecture](docs/README_TECHNICAL.md#architecture)
-- [Project layout](docs/README_TECHNICAL.md#project-layout)
-- [Comparison with other tools](docs/README_TECHNICAL.md#comparison)
-- [Adding a platform](docs/README_TECHNICAL.md#adding-a-platform)
-- [Command reference](docs/README_TECHNICAL.md#commands)
-- [Troubleshooting](docs/README_TECHNICAL.md#troubleshooting)
 
 ## Limitations
 
@@ -94,7 +74,7 @@ The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 ## Disclaimer
 
-Clipshed is a local, personal-use tool. Download only content you have the right to use, and follow each site's terms of service and copyright law. Don't use it to bypass DRM or access controls, and don't host it as a public service. Not affiliated with YouTube, Meta, or any other platform.
+Clipshed is a local, personal-use tool. Download only content you have the right to use, and follow each site's terms of service and copyright law. Not affiliated with YouTube, Meta, or any other platform.
 
 ## License
 
