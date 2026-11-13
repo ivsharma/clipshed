@@ -27,7 +27,7 @@ Most downloaders fetch the entire video, then make you trim it afterward. Clipsh
 | **Facebook** | Experimental | `watch` links, reels, page videos, `fb.watch`; some posts need cookies |
 | **Instagram** | Experimental | Posts, reels, IGTV; most content needs cookies from a signed-in browser |
 
-Facebook and Instagram support depends on yt-dlp's extractors. See [Limitations](README_TECHNICAL.md#limitations) before relying on them.
+Facebook and Instagram support depends on yt-dlp's extractors. See [Limitations](docs/README_TECHNICAL.md#limitations) before relying on them.
 
 ## Quick start
 
@@ -75,14 +75,14 @@ Cookies stay on this machine and are never returned by the API or written to job
 
 ## Documentation
 
-The full reference is in [README_TECHNICAL.md](README_TECHNICAL.md):
+The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
-- [Architecture](README_TECHNICAL.md#architecture)
-- [Project layout](README_TECHNICAL.md#project-layout)
-- [Comparison with other tools](README_TECHNICAL.md#comparison)
-- [Adding a platform](README_TECHNICAL.md#adding-a-platform)
-- [Command reference](README_TECHNICAL.md#commands)
-- [Troubleshooting](README_TECHNICAL.md#troubleshooting)
+- [Architecture](docs/README_TECHNICAL.md#architecture)
+- [Project layout](docs/README_TECHNICAL.md#project-layout)
+- [Comparison with other tools](docs/README_TECHNICAL.md#comparison)
+- [Adding a platform](docs/README_TECHNICAL.md#adding-a-platform)
+- [Command reference](docs/README_TECHNICAL.md#commands)
+- [Troubleshooting](docs/README_TECHNICAL.md#troubleshooting)
 
 ## Limitations
 

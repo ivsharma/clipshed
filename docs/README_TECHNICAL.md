@@ -1,8 +1,8 @@
 # Clipshed — Technical README
 
-[← Back to the main README](README.md)
+[← Back to the main README](../README.md)
 
-This is the exhaustive reference: architecture, project layout, comparison, platform registry, command reference, and troubleshooting. For the quick overview, start with [README.md](README.md).
+This is the exhaustive reference: architecture, project layout, comparison, platform registry, command reference, and troubleshooting. For the quick overview, start with [README.md](../README.md).
 
 **A local-first video range clipper.** Paste a link, pick MP4, MP3, or both, and fetch only the section you need — no full-hour download followed by a manual trim. Works with YouTube, Facebook, and Instagram links.
 
@@ -26,11 +26,11 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 
 ## Screenshots
 
-![Range selection](docs/range-selection.png)
+![Range selection](range-selection.png)
 
 *Pick MP4, MP3, or both; drag the handles or type exact times.*
 
-![Both outputs ready](docs/result-both.png)
+![Both outputs ready](result-both.png)
 
 *One section download produces both MP4 and MP3, with separate download buttons.*
 
@@ -189,7 +189,7 @@ clipshed/
     lib/selection.ts      Selection rules, size estimates, and validation
   scripts/
     setup-binaries.ps1    Downloads yt-dlp and ffmpeg
-  docs/                   Screenshots used by this README
+  docs/                   Screenshots and this technical reference
   .github/workflows/      CI
   bin/                    Local binaries (gitignored)
   data/                   Jobs, downloads, temp files (gitignored)
@@ -272,7 +272,7 @@ Keep changes scoped, add a test for parsing/validation logic, and don’t commit
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](../LICENSE).
 
 Clipshed is not affiliated with YouTube, Instagram, Facebook, or any other platform. yt-dlp, ffmpeg, and their builds have their own licenses; this repo downloads them at setup time instead of bundling them.
 
