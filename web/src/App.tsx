@@ -297,7 +297,7 @@ export default function App() {
                 {job ? (
                   <JobPanel job={job} onCancel={() => void handleCancel()} onReset={handleReset} onRetry={() => void handleRetry()} />
                 ) : (
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                     <div className="panel space-y-6 p-5 sm:p-6">
                       <FormatPicker
                         video={probe}
