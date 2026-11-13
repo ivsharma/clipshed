@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import {
-  settingsSchema,
-  type Settings,
-  type SettingsUpdate,
-} from "@clipshed/shared";
+import { settingsSchema, type Settings, type SettingsUpdate } from "@clipshed/shared";
 import { config } from "../config";
 import { log } from "../lib/logger";
 
@@ -18,30 +14,22 @@ const DEFAULTS: Settings = {
 
 let cached: Settings | null = null;
 
-export async function loadSettings(force = false): Promise<Settings> {
-  if (cached && !force) return cached;
+export async function getSettings(): Promise<Settings> {
+  if (cached) return cached;
 
   try {
-    const raw = await fs.readFile(config.settingsFile, "utf8");
-    const parsed = settingsSchema.parse(JSON.parse(raw));
-    cached = parsed;
-    return parsed;
+    cached = settingsSchema.parse(JSON.parse(await fs.readFile(config.settingsFile, "utf8")));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       log.warn("Could not read settings; using defaults.", error);
     }
     cached = { ...DEFAULTS };
-    return cached;
   }
-}
-
-export async function getSettings(): Promise<Settings> {
-  return cached ?? loadSettings();
+  return cached;
 }
 
 export async function updateSettings(patch: SettingsUpdate): Promise<Settings> {
-  const current = await getSettings();
-  const next = settingsSchema.parse({ ...current, ...patch });
+  const next = settingsSchema.parse({ ...(await getSettings()), ...patch });
   await fs.mkdir(path.dirname(config.settingsFile), { recursive: true });
   const temp = `${config.settingsFile}.tmp`;
   await fs.writeFile(temp, JSON.stringify(next, null, 2), "utf8");

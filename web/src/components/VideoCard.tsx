@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { Clock, ListVideo, Play, User } from "lucide-react";
-import { formatDuration, type ProbeResult } from "@clipshed/shared";
-import { cn } from "../lib/cn";
+import { PLATFORM_LABELS, formatDuration, type ProbeResult } from "@clipshed/shared";
 
-interface VideoCardProps {
-  video: ProbeResult;
-}
-
-export function VideoCard({ video }: VideoCardProps) {
+export function VideoCard({ video }: { video: ProbeResult }) {
   const [imageFailed, setImageFailed] = useState(false);
 
   return (
@@ -42,14 +37,11 @@ export function VideoCard({ video }: VideoCardProps) {
 
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="badge badge-accent">{PLATFORM_LABELS[video.platform]}</span>
           <span className="badge badge-success">Ready</span>
           <span className="badge">{video.qualities.length} qualities</span>
-          {video.chapters.length > 0 ? (
-            <span className="badge">{video.chapters.length} chapters</span>
-          ) : null}
-          {video.ageLimit ? (
-            <span className="badge badge-danger">18+</span>
-          ) : null}
+          {video.chapters.length > 0 ? <span className="badge">{video.chapters.length} chapters</span> : null}
+          {video.ageLimit ? <span className="badge badge-danger">18+</span> : null}
         </div>
 
         <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
@@ -69,14 +61,33 @@ export function VideoCard({ video }: VideoCardProps) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ListVideo className="h-3.5 w-3.5" />
-            {video.videoId}
+            {video.mediaId}
           </span>
         </div>
 
-        <p className={cn("mt-3 text-xs leading-relaxed text-zinc-500")}>
-          Pick a format and an optional time range. Only the selected range is
-          downloaded.
+        <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+          Pick a format and an optional time range. Only the selected range is downloaded.
         </p>
+      </div>
+    </div>
+  );
+}
+
+export function ProbeSkeleton() {
+  return (
+    <div className="panel mt-4 animate-fade-in p-5 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="skeleton aspect-video w-full rounded-2xl sm:w-[230px]" />
+        <div className="flex-1 space-y-3 py-2">
+          <div className="skeleton h-3 w-24 rounded-full" />
+          <div className="skeleton h-5 w-4/5 rounded-lg" />
+          <div className="skeleton h-3 w-1/2 rounded-full" />
+          <div className="skeleton h-3 w-2/3 rounded-full" />
+        </div>
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="skeleton h-44 rounded-2xl" />
+        <div className="skeleton h-44 rounded-2xl" />
       </div>
     </div>
   );

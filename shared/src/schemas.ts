@@ -23,27 +23,16 @@ export const jobRequestSchema = z.object({
   precise: z.boolean().optional().default(false),
 });
 
-export const cookiesModeSchema = z.enum(["none", "file", "browser"]);
-
-export const cookiesBrowserSchema = z.enum([
-  "chrome",
-  "edge",
-  "firefox",
-  "brave",
-  "chromium",
-  "opera",
-  "vivaldi",
-]);
-
 export const settingsSchema = z.object({
-  cookiesMode: cookiesModeSchema.default("none"),
-  cookiesBrowser: cookiesBrowserSchema.default("chrome"),
+  cookiesMode: z.enum(["none", "file", "browser"]).default("none"),
+  cookiesBrowser: z
+    .enum(["chrome", "edge", "firefox", "brave", "chromium", "opera", "vivaldi"])
+    .default("chrome"),
   cookiesFile: z.string().max(4096).default(""),
   preferH264: z.boolean().default(true),
 });
 
 export const settingsUpdateSchema = settingsSchema.partial();
 
-export type ProbeRequest = z.infer<typeof probeRequestSchema>;
 export type JobRequest = z.infer<typeof jobRequestSchema>;
 export type SettingsUpdate = z.infer<typeof settingsUpdateSchema>;

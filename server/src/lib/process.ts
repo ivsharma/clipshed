@@ -7,13 +7,7 @@ export interface RunResult {
   timedOut: boolean;
 }
 
-export interface RunOptions {
-  cwd?: string;
-  timeoutMs?: number;
-  env?: NodeJS.ProcessEnv;
-}
-
-/** Kills a process and its children. yt-dlp spawns ffmpeg, so the tree matters. */
+/** Kills a process and its children. yt-dlp spawns ffmpeg, so the whole tree must go. */
 export async function killProcessTree(child: ChildProcess): Promise<void> {
   if (!child.pid) return;
 
@@ -30,37 +24,20 @@ export async function killProcessTree(child: ChildProcess): Promise<void> {
   }
 
   try {
-    process.kill(-child.pid, "SIGTERM");
+    process.kill(-child.pid, "SIGKILL");
   } catch {
-    try {
-      child.kill("SIGTERM");
-    } catch {
-      // already gone
-    }
+    child.kill("SIGKILL");
   }
-
-  const timer = setTimeout(() => {
-    if (!child.killed) {
-      try {
-        process.kill(-child.pid!, "SIGKILL");
-      } catch {
-        // already gone
-      }
-    }
-  }, 3000);
-  timer.unref();
 }
 
-/** Runs a command to completion, capturing stdout/stderr with an optional timeout. */
 export function runCommand(
   command: string,
   args: string[],
-  options: RunOptions = {},
+  options: { cwd?: string; timeoutMs?: number } = {},
 ): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: options.env ?? process.env,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
       detached: process.platform !== "win32",
@@ -69,23 +46,9 @@ export function runCommand(
     let stdout = "";
     let stderr = "";
     let timedOut = false;
-    let settled = false;
 
-    const finish = (result: RunResult) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(result);
-    };
-
-    child.stdout?.setEncoding("utf8");
-    child.stderr?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => {
-      stdout += chunk;
-    });
-    child.stderr?.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
+    child.stdout?.setEncoding("utf8").on("data", (chunk: string) => (stdout += chunk));
+    child.stderr?.setEncoding("utf8").on("data", (chunk: string) => (stderr += chunk));
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -93,14 +56,34 @@ export function runCommand(
     }, options.timeoutMs ?? 60_000);
 
     child.once("error", (error) => {
-      if (settled) return;
-      settled = true;
       clearTimeout(timer);
       reject(error);
     });
-
     child.once("close", (code) => {
-      finish({ code, stdout, stderr, timedOut });
+      clearTimeout(timer);
+      resolve({ code, stdout, stderr, timedOut });
     });
   });
+}
+
+/**
+ * Splits streamed text on CR, LF, or CRLF. ffmpeg writes its progress with
+ * carriage returns, so a line-based readline interface would miss updates.
+ */
+export class LineSplitter {
+  private buffer = "";
+
+  constructor(private readonly onLine: (line: string) => void) {}
+
+  push(chunk: string): void {
+    const parts = (this.buffer + chunk).split(/\r\n|\n|\r/);
+    this.buffer = parts.pop() ?? "";
+    for (const part of parts) if (part) this.onLine(part);
+  }
+
+  flush(): void {
+    const remaining = this.buffer;
+    this.buffer = "";
+    if (remaining) this.onLine(remaining);
+  }
 }

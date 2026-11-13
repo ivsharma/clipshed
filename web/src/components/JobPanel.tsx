@@ -1,14 +1,7 @@
+import type { ReactNode } from "react";
+import { AlertTriangle, CheckCircle, Download, FileAudio, FileVideo, Loader2, RotateCcw, X } from "lucide-react";
 import {
-  AlertTriangle,
-  CheckCircle,
-  Download,
-  FileAudio,
-  FileVideo,
-  Loader2,
-  RotateCcw,
-  X,
-} from "lucide-react";
-import {
+  PLATFORM_LABELS,
   formatBytes,
   formatClock,
   formatDuration,
@@ -29,211 +22,127 @@ interface JobPanelProps {
 
 export function JobPanel({ job, onCancel, onReset, onRetry }: JobPanelProps) {
   if (job.status === "completed" && job.output) {
-    const outputs = [job.output, job.audioOutput].filter(
-      (output): output is JobOutput => Boolean(output),
-    );
-    const multiple = outputs.length > 1;
+    return <Finished job={job} output={job.output} onReset={onReset} />;
+  }
 
+  if (job.status === "failed" || job.status === "cancelled") {
+    const failed = job.status === "failed";
     return (
-      <div className="panel animate-fade-in overflow-hidden">
-        <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
-        <div className="p-5 sm:p-6">
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/12 text-emerald-300">
-              <CheckCircle className="h-6 w-6" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">
-                  {multiple ? "Your files are ready" : "Your file is ready"}
-                </h2>
-                <span className="badge badge-success">{kindLabel(job.kind)}</span>
-                <span className="badge">{rangeText(job)}</span>
-              </div>
-              <p className="mt-1 text-xs text-zinc-500">
-                {job.uploader ?? "YouTube"}
-              </p>
-
-              <div className="mt-4 space-y-2">
-                {outputs.map((output) => {
-                  const isAudio = output.mime === "audio/mpeg";
-                  return (
-                    <div
-                      key={output.filename}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/[0.025] px-3 py-2.5"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "badge shrink-0",
-                              isAudio ? "badge-accent" : "badge-success",
-                            )}
-                          >
-                            {isAudio ? "MP3" : "MP4"}
-                          </span>
-                          <span className="truncate text-xs font-medium text-zinc-300">
-                            {output.filename}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-[10px] text-zinc-600">
-                          {formatBytes(output.size)}
-                          {output.duration
-                            ? ` · ${formatDuration(output.duration)}`
-                            : ""}
-                        </div>
-                      </div>
-                      <a
-                        href={output.downloadUrl}
-                        className="btn-ghost h-8 w-8 shrink-0"
-                        aria-label={`Download ${isAudio ? "MP3" : "MP4"}`}
-                        title={`Download ${isAudio ? "MP3" : "MP4"}`}
-                      >
-                        {isAudio ? (
-                          <FileAudio className="h-4 w-4" />
-                        ) : (
-                          <FileVideo className="h-4 w-4" />
-                        )}
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={cn(
-              "mt-6 grid gap-2.5",
-              multiple && "sm:grid-cols-2",
-            )}
-          >
-            {outputs.map((output, index) => {
-              const isAudio = output.mime === "audio/mpeg";
-              return (
-                <a
-                  key={output.filename}
-                  href={output.downloadUrl}
-                  className={cn(
-                    "h-12 px-5 text-sm",
-                    index === 0 ? "btn-primary" : "btn-secondary",
-                  )}
-                >
-                  <Download className="h-4 w-4" />
-                  Download {isAudio ? "MP3" : "MP4"}
-                </a>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={onReset}
-            className="btn-secondary mt-2.5 h-12 w-full px-5 text-sm"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Convert another
-          </button>
-
-          <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
-            Your browser saves the files to its downloads folder. The copies on
-            the server are cleaned up automatically after a while.
+      <Shell tone={failed ? "red" : "neutral"}>
+        <Header
+          icon={failed ? <AlertTriangle className="h-6 w-6" /> : <X className="h-6 w-6" />}
+          iconClass={failed ? "bg-red-400/12 text-red-300" : "bg-white/6 text-zinc-400"}
+          title={failed ? "That didn't work" : "Cancelled"}
+        >
+          <p className={cn("mt-1 text-sm leading-relaxed", failed ? "text-red-100/70" : "text-zinc-400")}>
+            {failed
+              ? (job.error?.message ?? "The download failed.")
+              : "The download was stopped and partial files were removed."}
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (job.status === "failed") {
-    return (
-      <div className="panel animate-fade-in overflow-hidden">
-        <div className="h-1 w-full bg-gradient-to-r from-red-500 to-rose-500" />
-        <div className="p-5 sm:p-6">
-          <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-400/12 text-red-300">
-              <AlertTriangle className="h-6 w-6" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold text-white">
-                That didn&apos;t work
-              </h2>
-              <p className="mt-1 text-sm leading-relaxed text-red-100/70">
-                {job.error?.message ?? "The download failed."}
-              </p>
-              {job.error?.details ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-xs font-medium text-zinc-500 transition hover:text-zinc-300">
-                    Show diagnostics
-                  </summary>
-                  <pre className="scrollbar-thin mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-white/8 bg-black/30 p-3 font-mono text-[11px] leading-relaxed text-zinc-500">
-                    {job.error.details}
-                  </pre>
-                </details>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-            <button
-              type="button"
-              onClick={onRetry}
-              className="btn-primary h-12 flex-1 px-6 text-sm"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Try again
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="btn-secondary h-12 px-5 text-sm"
-            >
-              Start over
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (job.status === "cancelled") {
-    return (
-      <div className="panel animate-fade-in p-5 sm:p-6">
-        <div className="flex items-start gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/6 text-zinc-400">
-            <X className="h-6 w-6" />
-          </span>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Cancelled</h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              The download was stopped and partial files were removed.
-            </p>
-          </div>
-        </div>
-        <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="btn-primary h-12 flex-1 px-6 text-sm"
-          >
+          {failed && job.error?.details ? <Diagnostics text={job.error.details} /> : null}
+        </Header>
+        <Actions>
+          <ActionButton primary onClick={onRetry}>
             <RotateCcw className="h-4 w-4" />
             Try again
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="btn-secondary h-12 px-5 text-sm"
-          >
-            Start over
-          </button>
-        </div>
-      </div>
+          </ActionButton>
+          <ActionButton onClick={onReset}>Start over</ActionButton>
+        </Actions>
+      </Shell>
     );
   }
 
-  const percent = job.progress.percent;
+  return <Running job={job} onCancel={onCancel} />;
+}
+
+function Finished({ job, output, onReset }: { job: Job; output: JobOutput; onReset: () => void }) {
+  const outputs = [output, job.audioOutput].filter((item): item is JobOutput => Boolean(item));
+  const multiple = outputs.length > 1;
+
+  return (
+    <Shell tone="green">
+      <Header
+        icon={<CheckCircle className="h-6 w-6" />}
+        iconClass="bg-emerald-400/12 text-emerald-300"
+        title={multiple ? "Your files are ready" : "Your file is ready"}
+        badges={
+          <>
+            <span className="badge badge-success">{kindLabel(job.kind)}</span>
+            <span className="badge">{rangeText(job)}</span>
+          </>
+        }
+      >
+        <p className="mt-1 text-xs text-zinc-500">{job.uploader ?? PLATFORM_LABELS[job.platform]}</p>
+        <div className="mt-4 space-y-2">
+          {outputs.map((file) => {
+            const isAudio = file.mime === "audio/mpeg";
+            return (
+              <div
+                key={file.filename}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/[0.025] px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("badge shrink-0", isAudio ? "badge-accent" : "badge-success")}>
+                      {isAudio ? "MP3" : "MP4"}
+                    </span>
+                    <span className="truncate text-xs font-medium text-zinc-300">{file.filename}</span>
+                  </div>
+                  <div className="mt-1 text-[10px] text-zinc-600">
+                    {formatBytes(file.size)}
+                    {file.duration ? ` · ${formatDuration(file.duration)}` : ""}
+                  </div>
+                </div>
+                <a
+                  href={file.downloadUrl}
+                  className="btn-ghost h-8 w-8 shrink-0"
+                  aria-label={`Download ${isAudio ? "MP3" : "MP4"}`}
+                  title={`Download ${isAudio ? "MP3" : "MP4"}`}
+                >
+                  {isAudio ? <FileAudio className="h-4 w-4" /> : <FileVideo className="h-4 w-4" />}
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </Header>
+
+      <div className={cn("mt-6 grid gap-2.5", multiple && "sm:grid-cols-2")}>
+        {outputs.map((file, index) => {
+          const isAudio = file.mime === "audio/mpeg";
+          return (
+            <a
+              key={file.filename}
+              href={file.downloadUrl}
+              className={cn("h-12 px-5 text-sm", index === 0 ? "btn-primary" : "btn-secondary")}
+            >
+              <Download className="h-4 w-4" />
+              Download {isAudio ? "MP3" : "MP4"}
+            </a>
+          );
+        })}
+      </div>
+
+      <Actions>
+        <ActionButton onClick={onReset} className="flex-1">
+          <RotateCcw className="h-4 w-4" />
+          Convert another
+        </ActionButton>
+      </Actions>
+
+      <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
+        Your browser saves the files to its downloads folder. The copies on the server are cleaned up automatically
+        after a while.
+      </p>
+    </Shell>
+  );
+}
+
+function Running({ job, onCancel }: { job: Job; onCancel: () => void }) {
   const active = job.status === "running" || job.status === "resolving";
   const cancelling = job.stage === "cancelling";
-  const Icon = job.kind === "mp4" ? FileVideo : FileAudio;
+  const Icon = job.kind === "mp3" ? FileAudio : FileVideo;
+  const percent = job.progress.percent;
 
   return (
     <div className="panel animate-fade-in overflow-hidden" id="job-panel">
@@ -245,16 +154,12 @@ export function JobPanel({ job, onCancel, onReset, onRetry }: JobPanelProps) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="line-clamp-1 text-base font-semibold text-white sm:text-lg">
-                {job.title}
-              </h2>
+              <h2 className="line-clamp-1 text-base font-semibold text-white sm:text-lg">{job.title}</h2>
               <span className="badge badge-accent">{kindLabel(job.kind)}</span>
               <span className="badge">{rangeText(job)}</span>
             </div>
             <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-              {active ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" />
-              ) : null}
+              {active ? <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-400" /> : null}
               <span>{statusLabel(job)}</span>
               {job.progress.detail && job.progress.detail !== statusLabel(job) ? (
                 <>
@@ -268,9 +173,7 @@ export function JobPanel({ job, onCancel, onReset, onRetry }: JobPanelProps) {
 
         <div className="mt-6" aria-live="polite">
           <div className="mb-2 flex items-end justify-between gap-3">
-            <span className="text-xs font-medium text-zinc-400">
-              {stageLabel(job)}
-            </span>
+            <span className="text-xs font-medium text-zinc-400">{stageLabel(job)}</span>
             <span className="font-mono text-lg font-semibold tracking-tight text-white">
               {percent === null ? "…" : `${Math.round(percent)}%`}
             </span>
@@ -300,48 +203,116 @@ export function JobPanel({ job, onCancel, onReset, onRetry }: JobPanelProps) {
             <Stat label="ETA" value={formatEta(job.progress.eta)} />
             <Stat
               label="Range"
-              value={
-                job.range
-                  ? `${formatClock(job.range.start)} – ${formatClock(job.range.end)}`
-                  : "Full video"
-              }
+              value={job.range ? `${formatClock(job.range.start)} – ${formatClock(job.range.end)}` : "Full video"}
             />
           </div>
         </div>
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-[11px] leading-relaxed text-zinc-600">
-            {job.kind === "mp4"
-              ? "Video and audio are downloaded and merged locally."
-              : "Audio is downloaded and converted to MP3 locally."}
+            {job.kind === "mp3"
+              ? "Audio is downloaded and converted to MP3 locally."
+              : "Video and audio are downloaded and merged locally."}
           </p>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={cancelling}
-            className={cn(
-              "btn-secondary h-9 shrink-0 px-3.5 text-xs",
-              cancelling && "opacity-50",
-            )}
-          >
+          <ActionButton onClick={onCancel} disabled={cancelling} className="h-9 px-3.5 text-xs">
             <X className="h-3.5 w-3.5" />
             {cancelling ? "Cancelling…" : "Cancel"}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
   );
 }
 
+function Shell({ tone, children }: { tone: "green" | "red" | "neutral"; children: ReactNode }) {
+  const bar =
+    tone === "green"
+      ? "from-emerald-400 via-teal-400 to-emerald-500"
+      : tone === "red"
+        ? "from-red-500 to-rose-500"
+        : null;
+  return (
+    <div className="panel animate-fade-in overflow-hidden">
+      {bar ? <div className={cn("h-1 w-full bg-gradient-to-r", bar)} /> : null}
+      <div className="p-5 sm:p-6">{children}</div>
+    </div>
+  );
+}
+
+function Header({
+  icon,
+  iconClass,
+  title,
+  badges,
+  children,
+}: {
+  icon: ReactNode;
+  iconClass: string;
+  title: string;
+  badges?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-4">
+      <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", iconClass)}>{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          {badges}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Actions({ children }: { children: ReactNode }) {
+  return <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">{children}</div>;
+}
+
+function ActionButton({
+  children,
+  onClick,
+  primary,
+  disabled,
+  className,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  primary?: boolean;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(primary ? "btn-primary h-12 flex-1 px-6 text-sm" : "btn-secondary h-12 px-5 text-sm", className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Diagnostics({ text }: { text: string }) {
+  return (
+    <details className="mt-3">
+      <summary className="cursor-pointer text-xs font-medium text-zinc-500 transition hover:text-zinc-300">
+        Show diagnostics
+      </summary>
+      <pre className="scrollbar-thin mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-white/8 bg-black/30 p-3 font-mono text-[11px] leading-relaxed text-zinc-500">
+        {text}
+      </pre>
+    </details>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-white/6 bg-black/15 px-2.5 py-2">
-      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
-        {label}
-      </div>
-      <div className="mt-0.5 truncate font-mono text-[11px] text-zinc-300">
-        {value}
-      </div>
+      <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-[11px] text-zinc-300">{value}</div>
     </div>
   );
 }

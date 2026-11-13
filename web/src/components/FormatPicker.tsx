@@ -232,7 +232,7 @@ export function FormatPicker({
 
           <p className="flex items-start gap-2 rounded-xl border border-white/6 bg-white/[0.025] px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            YouTube audio is already compressed. 192 kbps is a good balance;
+            Source audio is already compressed. 192 kbps is a good balance;
             320 kbps mostly increases file size.
           </p>
         </div>

@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
 import type { Health } from "@clipshed/shared";
 import { config } from "../config";
-import { runCommand } from "../lib/process";
+import { AppError } from "../errors";
 import { log } from "../lib/logger";
-import { AppError } from "./errors";
+import { runCommand } from "../lib/process";
 import { getSettings, isCookiesConfigured } from "./settings";
 
 interface Versions {
@@ -11,55 +11,35 @@ interface Versions {
   ffmpeg: string | null;
 }
 
-let cached: { versions: Versions; expiresAt: number } | null = null;
-let updatePromise: Promise<{ ok: boolean; output: string }> | null = null;
+let versionCache: { versions: Versions; expiresAt: number } | null = null;
 
-export async function getVersions(force = false): Promise<Versions> {
-  if (!force && cached && cached.expiresAt > Date.now()) {
-    return cached.versions;
+async function firstLineOf(binary: string, args: string[]): Promise<string | null> {
+  if (!existsSync(binary)) return null;
+  try {
+    const result = await runCommand(binary, args, { timeoutMs: 20_000 });
+    return result.code === 0 ? (result.stdout.trim().split(/\r?\n/)[0] ?? null) : null;
+  } catch (error) {
+    log.warn(`Could not read version for ${binary}.`, error);
+    return null;
   }
+}
 
-  const versions: Versions = { ytdlp: null, ffmpeg: null };
+async function getVersions(): Promise<Versions> {
+  if (versionCache && versionCache.expiresAt > Date.now()) return versionCache.versions;
 
-  if (existsSync(config.ytdlpPath)) {
-    try {
-      const result = await runCommand(config.ytdlpPath, ["--version"], {
-        timeoutMs: 20_000,
-      });
-      versions.ytdlp = result.code === 0 ? result.stdout.trim().split(/\r?\n/)[0] : null;
-    } catch (error) {
-      log.warn("Could not read yt-dlp version.", error);
-    }
-  }
-
-  if (existsSync(config.ffmpegPath)) {
-    try {
-      const result = await runCommand(config.ffmpegPath, ["-version"], {
-        timeoutMs: 20_000,
-      });
-      versions.ffmpeg =
-        result.code === 0 ? result.stdout.trim().split(/\r?\n/)[0] : null;
-    } catch (error) {
-      log.warn("Could not read ffmpeg version.", error);
-    }
-  }
-
-  cached = {
-    versions,
-    expiresAt: Date.now() + 60_000,
+  const versions: Versions = {
+    ytdlp: await firstLineOf(config.ytdlpPath, ["--version"]),
+    ffmpeg: await firstLineOf(config.ffmpegPath, ["-version"]),
   };
+  versionCache = { versions, expiresAt: Date.now() + 60_000 };
   return versions;
 }
 
 export function binariesExist(): boolean {
-  return (
-    existsSync(config.ytdlpPath) &&
-    existsSync(config.ffmpegPath) &&
-    existsSync(config.ffprobePath)
-  );
+  return [config.ytdlpPath, config.ffmpegPath, config.ffprobePath].every((file) => existsSync(file));
 }
 
-export async function assertBinaries(): Promise<void> {
+export function assertBinaries(): void {
   if (!binariesExist()) {
     throw new AppError(
       "BINARY_MISSING",
@@ -70,45 +50,30 @@ export async function assertBinaries(): Promise<void> {
 }
 
 export async function getHealth(): Promise<Health> {
-  const versions = await getVersions();
-  const settings = await getSettings();
-
+  const [versions, settings] = await Promise.all([getVersions(), getSettings()]);
   return {
     ok: Boolean(versions.ytdlp && versions.ffmpeg),
     ytdlpVersion: versions.ytdlp,
     ffmpegVersion: versions.ffmpeg,
     nodeVersion: process.version,
-    jsRuntime: "node",
     binariesOk: binariesExist(),
     cookiesConfigured: isCookiesConfigured(settings),
-    ytdlpPath: config.ytdlpPath,
-    ffmpegPath: config.ffmpegPath,
   };
 }
 
+let updating: Promise<{ ok: boolean; output: string }> | null = null;
+
+/** Runs `yt-dlp -U`. Concurrent calls share one update. */
 export function updateYtDlp(): Promise<{ ok: boolean; output: string }> {
-  if (updatePromise) return updatePromise;
-
-  updatePromise = (async () => {
+  updating ??= (async () => {
     if (!existsSync(config.ytdlpPath)) {
-      throw new AppError(
-        "BINARY_MISSING",
-        "yt-dlp isn't installed. Run `npm run setup` first.",
-        500,
-      );
+      throw new AppError("BINARY_MISSING", "yt-dlp isn't installed. Run `npm run setup` first.", 500);
     }
-
-    const result = await runCommand(config.ytdlpPath, ["-U"], {
-      timeoutMs: 180_000,
-      cwd: config.rootDir,
-    });
-
-    cached = null;
-    const output = `${result.stdout}\n${result.stderr}`.trim();
-    return { ok: result.code === 0, output };
+    const result = await runCommand(config.ytdlpPath, ["-U"], { timeoutMs: 180_000, cwd: config.rootDir });
+    versionCache = null;
+    return { ok: result.code === 0, output: `${result.stdout}\n${result.stderr}`.trim() };
   })().finally(() => {
-    updatePromise = null;
+    updating = null;
   });
-
-  return updatePromise;
+  return updating;
 }

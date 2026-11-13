@@ -171,7 +171,7 @@ export function SettingsDialog({
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-200">
-                  YouTube access
+                  Site access
                 </h3>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
                   Cookies help with age-restricted, private, or bot-checked
@@ -272,7 +272,7 @@ export function SettingsDialog({
                   Prefer H.264
                 </h3>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
-                  Best compatibility with older players. YouTube offers H.264 up
+                  Best compatibility with older players. Most sites offer H.264 up
                   to 1080p; higher resolutions use VP9/AV1.
                 </p>
               </div>
@@ -316,7 +316,7 @@ export function SettingsDialog({
 
             <div className="mt-2 flex items-center justify-between gap-3">
               <p className="text-[10px] leading-relaxed text-zinc-600">
-                Keep yt-dlp fresh; YouTube changes often.
+                Keep yt-dlp fresh; sites change often.
               </p>
               <button
                 type="button"

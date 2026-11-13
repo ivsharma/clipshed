@@ -1,13 +1,9 @@
+import type { PlatformId } from "./platforms";
+
 export type OutputKind = "mp4" | "mp3";
 export type JobKind = OutputKind | "both";
 
-export type JobStatus =
-  | "queued"
-  | "resolving"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type JobStatus = "queued" | "resolving" | "running" | "completed" | "failed" | "cancelled";
 
 export type JobStage =
   | "queued"
@@ -38,7 +34,8 @@ export interface Chapter {
 }
 
 export interface ProbeResult {
-  videoId: string;
+  platform: PlatformId;
+  mediaId: string;
   url: string;
   title: string;
   uploader: string | null;
@@ -50,6 +47,7 @@ export interface ProbeResult {
   liveStatus: string | null;
   ageLimit: number | null;
   availability: string | null;
+  /** Start time parsed from the pasted link, e.g. `?t=90`. */
   suggestedStart: number | null;
 }
 
@@ -84,7 +82,8 @@ export interface JobError {
 export interface Job {
   id: string;
   url: string;
-  videoId: string;
+  platform: PlatformId;
+  mediaId: string;
   title: string;
   uploader: string | null;
   thumbnail: string | null;
@@ -129,11 +128,8 @@ export interface Health {
   ytdlpVersion: string | null;
   ffmpegVersion: string | null;
   nodeVersion: string;
-  jsRuntime: string;
   binariesOk: boolean;
   cookiesConfigured: boolean;
-  ytdlpPath: string;
-  ffmpegPath: string;
 }
 
 export interface SettingsPayload {

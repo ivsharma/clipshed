@@ -1,6 +1,6 @@
 # Clipshed
 
-**A local-first video range clipper.** Paste a link, pick MP4, MP3, or both, and fetch only the section you need — no full-hour download followed by a manual trim. YouTube is supported today; Instagram and Facebook are on the roadmap.
+**A local-first video range clipper.** Paste a link, pick MP4, MP3, or both, and fetch only the section you need — no full-hour download followed by a manual trim. Works with YouTube, Facebook, and Instagram links.
 
 [![CI](https://github.com/ivsharma/clipshed/actions/workflows/ci.yml/badge.svg)](https://github.com/ivsharma/clipshed/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%E2%89%A522-339933)
@@ -32,7 +32,9 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 
 ## Features
 
-- YouTube watch links, `youtu.be`, Shorts, embeds, and livestream replays
+- **YouTube:** watch links, `youtu.be`, Shorts, embeds, and livestream replays
+- **Facebook:** `watch` links, reels, page videos, and `fb.watch` links (experimental; some posts need cookies)
+- **Instagram:** posts, reels, and IGTV (experimental; most content needs cookies from a signed-in browser)
 - **MP4** with selectable resolution (H.264 up to 1080p by default; VP9/AV1 at higher resolutions)
 - **MP3** at 128, 192, 256, or 320 kbps
 - **Both** — MP4 and MP3 for the same range in one job
@@ -122,8 +124,9 @@ flowchart LR
   API --> DATA["data/jobs.json"]
 ```
 
-- The frontend never talks to YouTube directly.
-- The server canonicalizes the URL to an 11-character video ID and only accepts YouTube hosts.
+- The frontend never talks to a site directly; it only talks to the local API.
+- `shared/src/platforms.ts` is the single place that knows about sites. Each platform turns a pasted link into a canonical URL and a media ID.
+- The server only accepts links from registered platforms, and yt-dlp only ever receives the canonical URL.
 - Jobs run in a small queue, with one concurrent download by default.
 - yt-dlp and ffmpeg are spawned as child processes; no shell interpolation.
 - Cancellation uses `taskkill /T /F` on Windows so ffmpeg children die too.
@@ -148,8 +151,8 @@ Click the gear icon in the top-right.
 - **No cookies** — works for most public videos.
 - **Cookies file** — point to a Netscape-format `cookies.txt` exported from a browser extension.
 - **From browser** — ask yt-dlp to read cookies directly from Chrome, Edge, Firefox, Brave, Chromium, Opera, or Vivaldi.
-- **Prefer H.264** — keep MP4 compatibility high. YouTube offers H.264 up to 1080p.
-- **Update yt-dlp** — YouTube changes often; an outdated yt-dlp is the most common cause of failures.
+- **Prefer H.264** — keep MP4 compatibility high. Most sites offer H.264 up to 1080p.
+- **Update yt-dlp** — sites change often; an outdated yt-dlp is the most common cause of failures.
 
 Cookies stay on this machine and are never returned by the API or written to the job history.
 
@@ -157,9 +160,29 @@ Cookies stay on this machine and are never returned by the API or written to the
 
 ```text
 clipshed/
-  shared/                 API types, Zod schemas, time/URL/format helpers
-  server/                 Express API, job manager, yt-dlp/ffmpeg wrapper
-  web/                    React + Vite + Tailwind frontend
+  shared/src/
+    platforms.ts          Supported sites: URL parsing and canonical links
+    types.ts              API and job types shared by server and UI
+    schemas.ts            Request validation (Zod)
+    time.ts, format.ts    Time parsing and display helpers
+  server/src/
+    routes.ts             All HTTP endpoints
+    app.ts, index.ts      Express setup and startup
+    errors.ts             AppError and the yt-dlp error rules table
+    media/
+      args.ts             yt-dlp command-line arguments
+      probe.ts            Metadata lookup, normalisation, and cache
+      formats.ts          Quality selection and format selectors
+      progress.ts         yt-dlp/ffmpeg output to progress events
+      download.ts         Runs a download, finalises files, handles cancel
+    services/
+      job-manager.ts      Queue, job lifecycle, and history persistence
+      settings.ts         Settings and cookie configuration
+      binaries.ts         yt-dlp/ffmpeg checks and updates
+  web/src/
+    App.tsx               Page state and wiring
+    components/           Landing, format picker, range selector, job panel, etc.
+    lib/selection.ts      Selection rules, size estimates, and validation
   scripts/
     setup-binaries.ps1    Downloads yt-dlp and ffmpeg
   docs/                   Screenshots used by this README
@@ -168,6 +191,15 @@ clipshed/
   data/                   Jobs, downloads, temp files (gitignored)
   start.ps1               One-command local start
 ```
+
+## Adding a platform
+
+Most new sites need two small changes:
+
+1. **Link parsing** — add an entry to `PLATFORMS` in `shared/src/platforms.ts` with its hostnames and a `parse` function that returns a `mediaId` and canonical `url`. Add tests next to the existing ones in `platforms.test.ts`.
+2. **Error hints (optional)** — if the site fails with a specific message, add a rule to `RULES` in `server/src/errors.ts`. Rules are checked in order, so put site-specific rules before the generic ones.
+
+yt-dlp already supports hundreds of sites, so the download path itself usually needs no changes. Check that the site works with `yt-dlp` on the command line first.
 
 ## Commands
 
@@ -205,6 +237,7 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 ## Limitations
 
 - Single videos only; playlists and channels are rejected.
+- Facebook and Instagram support depends on yt-dlp's extractors. Many posts need cookies from a signed-in browser, and some posts without a video height can only be downloaded as MP3. Treat these two platforms as experimental until you've tested your own links.
 - Active live streams aren't supported; livestream replays are.
 - No subtitles, thumbnail embedding, or SponsorBlock yet.
 - No authentication or multi-user support. The server binds to `127.0.0.1`.
@@ -214,7 +247,6 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 
 ## Roadmap
 
-- Instagram and Facebook video support
 - Playlist and channel support
 - Subtitle selection
 - SponsorBlock segment skipping

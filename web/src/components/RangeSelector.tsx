@@ -352,7 +352,7 @@ export function RangeSelector({
       {disabled ? (
         <div className="rounded-xl border border-amber-400/15 bg-amber-400/[0.05] px-3.5 py-3 text-[11px] text-amber-200/70">
           A time range needs a known video duration. You can still download the
-          full file if YouTube provides one.
+          full file if the site provides one.
         </div>
       ) : null}
     </div>
