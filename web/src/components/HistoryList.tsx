@@ -33,7 +33,9 @@ export function HistoryList({ jobs, onRefresh, onDelete, refreshing }: HistoryLi
           <p className="mt-1 text-[12px] text-[var(--ink-mute)]">Finished files and failed attempts will appear here.</p>
         </div>
       ) : (
-        <div className="scrollbar-thin max-h-[440px] overflow-auto">
+        <div className="scrollbar-thin max-h-[440px] overflow-y-auto overflow-x-hidden">
+          {/* Rotating status spinners can exceed the row bounds; clipping horizontally
+              prevents a scrollbar from appearing and shifting the page. */}
           {jobs.map((job) => {
             const outputs = [job.output, job.audioOutput].filter((output) => Boolean(output));
             const totalSize = outputs.reduce((sum, output) => sum + (output?.size ?? 0), 0);
