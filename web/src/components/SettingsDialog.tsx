@@ -233,6 +233,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
           <section className="mt-6">
             <div className="mono-label mb-2">03 / Local setup</div>
             <div className="border border-[var(--line-strong)] bg-[var(--paper)] p-3 font-mono text-[11px]">
+              <VersionRow label="Clipshed" value={health?.appVersion ?? "dev"} ok={Boolean(health?.appVersion)} />
               <VersionRow label="yt-dlp" value={health?.ytdlpVersion ?? "missing"} ok={Boolean(health?.ytdlpVersion)} />
               <VersionRow label="ffmpeg" value={ffmpegShort ?? "missing"} ok={Boolean(health?.ffmpegVersion)} />
               <VersionRow label="Node" value={health?.nodeVersion ?? "unknown"} ok={Boolean(health?.nodeVersion)} />

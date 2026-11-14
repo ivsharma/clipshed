@@ -12,12 +12,20 @@ New-Item -ItemType Directory -Force -Path $bin | Out-Null
 $ytdlp = Join-Path $bin "yt-dlp.exe"
 $ffmpeg = Join-Path $bin "ffmpeg.exe"
 $ffprobe = Join-Path $bin "ffprobe.exe"
+$qjs = Join-Path $bin "qjs.exe"
 
 if ($Force -or -not (Test-Path $ytdlp)) {
     Write-Host "Downloading yt-dlp..." -ForegroundColor Cyan
     Invoke-WebRequest `
         -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" `
         -OutFile $ytdlp
+}
+
+if ($Force -or -not (Test-Path $qjs)) {
+    Write-Host "Downloading QuickJS..." -ForegroundColor Cyan
+    Invoke-WebRequest `
+        -Uri "https://github.com/quickjs-ng/quickjs/releases/download/v0.17.0/qjs-windows-x86_64.exe" `
+        -OutFile $qjs
 }
 
 if ($Force -or -not (Test-Path $ffmpeg) -or -not (Test-Path $ffprobe)) {
@@ -52,5 +60,6 @@ Write-Host "Binaries ready:" -ForegroundColor Green
 Write-Host ("  yt-dlp  " + (& $ytdlp --version))
 Write-Host ("  ffmpeg  " + ((& $ffmpeg -version | Select-Object -First 1)))
 Write-Host ("  ffprobe " + ((& $ffprobe -version | Select-Object -First 1)))
+Write-Host ("  quickjs " + ((& $qjs --help | Select-Object -First 1)))
 Write-Host ""
-Write-Host "Node $(node --version) is available for yt-dlp's --js-runtimes node."
+Write-Host "QuickJS is used for yt-dlp when present; Node remains the fallback."

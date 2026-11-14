@@ -1,6 +1,6 @@
 {
   "name": "@clipshed/server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Local API and job engine for Clipshed.",
   "license": "MIT",

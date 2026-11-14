@@ -53,6 +53,7 @@ export async function getHealth(): Promise<Health> {
   const [versions, settings] = await Promise.all([getVersions(), getSettings()]);
   return {
     ok: Boolean(versions.ytdlp && versions.ffmpeg),
+    appVersion: config.appVersion,
     ytdlpVersion: versions.ytdlp,
     ffmpegVersion: versions.ffmpeg,
     nodeVersion: process.version,

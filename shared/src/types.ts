@@ -125,6 +125,7 @@ export interface Settings {
 
 export interface Health {
   ok: boolean;
+  appVersion: string;
   ytdlpVersion: string | null;
   ffmpegVersion: string | null;
   nodeVersion: string;

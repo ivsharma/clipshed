@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import {
   formatSectionTimestamp,
@@ -40,13 +41,18 @@ function cookieArgs(settings: Settings): string[] {
   return [];
 }
 
+/** Use the bundled QuickJS runtime when present; fall back to Node elsewhere. */
+function jsRuntimeArgs(): string[] {
+  if (existsSync(config.qjsPath)) return ["--js-runtimes", `quickjs:${config.qjsPath}`];
+  return ["--js-runtimes", "node"];
+}
+
 function commonArgs(settings: Settings): string[] {
   return [
     "--no-playlist",
     "--color",
     "never",
-    "--js-runtimes",
-    "node",
+    ...jsRuntimeArgs(),
     "--ffmpeg-location",
     config.ffmpegDir,
     "--socket-timeout",

@@ -11,6 +11,10 @@ cookies.txt
 .env
 .env.local
 
+# Desktop build output
+desktop/build/
+release/
+
 # Logs / OS / editor noise
 *.log
 .DS_Store

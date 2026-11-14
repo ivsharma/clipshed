@@ -1,10 +1,12 @@
 {
   "name": "clipshed",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Local-first video range clipper: fetch only the section you need as MP4, MP3, or both.",
+  "author": "Clipshed",
   "license": "MIT",
+  "main": "desktop/main.cjs",
   "keywords": [
     "youtube",
     "youtube-downloader",
@@ -31,10 +33,23 @@
     "start": "npm run start -w server",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.app.json --noEmit"
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.app.json --noEmit",
+    "version:check": "node scripts/check-version.mjs",
+    "desktop:check": "node --check desktop/main.cjs && node --check scripts/build-desktop.mjs && node --check scripts/check-desktop.mjs && node --check scripts/check-version.mjs && node --check scripts/release.mjs",
+    "desktop:verify": "node scripts/check-desktop.mjs",
+    "desktop:server": "node scripts/build-desktop.mjs",
+    "desktop:run": "npm run desktop:verify && npm run build && npm run desktop:server && electron .",
+    "desktop:pack": "npm run desktop:verify && npm run build && npm run desktop:server && electron-builder --dir",
+    "desktop:dist": "npm run desktop:verify && npm run build && npm run desktop:server && electron-builder --win nsis portable",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
   }

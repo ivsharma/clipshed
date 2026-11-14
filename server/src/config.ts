@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-export const ROOT_DIR = path.resolve(here, "../..");
+const defaultRoot = path.resolve(here, "../..");
+export const ROOT_DIR = process.env.CLIPSHED_ROOT ? path.resolve(process.env.CLIPSHED_ROOT) : defaultRoot;
 
 dotenv.config({ path: path.join(ROOT_DIR, ".env"), quiet: true });
 
@@ -20,10 +21,12 @@ function numberFromEnv(value: string | undefined, fallback: number): number {
 
 const dataDir = resolveFromRoot(process.env.DATA_DIR, "data");
 const binDir = resolveFromRoot(process.env.BIN_DIR, "bin");
+const ffmpegDir = process.env.FFMPEG_DIR ? resolveFromRoot(process.env.FFMPEG_DIR, "bin") : binDir;
 const isWindows = process.platform === "win32";
 
 export const config = {
   rootDir: ROOT_DIR,
+  appVersion: process.env.CLIPSHED_VERSION ?? process.env.npm_package_version ?? "dev",
   host: process.env.HOST ?? "127.0.0.1",
   port: numberFromEnv(process.env.PORT, 3000),
 
@@ -37,11 +40,14 @@ export const config = {
   ytdlpPath: process.env.YTDLP_PATH
     ? resolveFromRoot(process.env.YTDLP_PATH, `bin/${isWindows ? "yt-dlp.exe" : "yt-dlp"}`)
     : path.join(binDir, isWindows ? "yt-dlp.exe" : "yt-dlp"),
-  ffmpegDir: resolveFromRoot(process.env.FFMPEG_DIR, "bin"),
-  ffmpegPath: path.join(binDir, isWindows ? "ffmpeg.exe" : "ffmpeg"),
-  ffprobePath: path.join(binDir, isWindows ? "ffprobe.exe" : "ffprobe"),
+  ffmpegDir,
+  ffmpegPath: path.join(ffmpegDir, isWindows ? "ffmpeg.exe" : "ffmpeg"),
+  ffprobePath: path.join(ffmpegDir, isWindows ? "ffprobe.exe" : "ffprobe"),
+  qjsPath: process.env.QJS_PATH
+    ? resolveFromRoot(process.env.QJS_PATH, `bin/${isWindows ? "qjs.exe" : "qjs"}`)
+    : path.join(binDir, isWindows ? "qjs.exe" : "qjs"),
 
-  webDist: path.join(ROOT_DIR, "web", "dist"),
+  webDist: resolveFromRoot(process.env.WEB_DIST, "web/dist"),
 
   maxConcurrentJobs: Math.min(3, numberFromEnv(process.env.MAX_CONCURRENT_JOBS, 1)),
   jobTtlHours: numberFromEnv(process.env.JOB_TTL_HOURS, 24),

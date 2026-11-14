@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -30,12 +31,23 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+      - name: Check version consistency
+        run: npm run version:check
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Check desktop shell
+        run: npm run desktop:check
 
       - name: Unit tests
         run: npm test
 
       - name: Build frontend
         run: npm run build
+
+      - name: Build desktop server bundle
+        run: npm run desktop:server
