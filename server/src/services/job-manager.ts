@@ -26,6 +26,9 @@ const TERMINAL = new Set<Job["status"]>(["completed", "failed", "cancelled"]);
 const ACTIVE = new Set<Job["status"]>(["queued", "resolving", "running"]);
 const HISTORY_LIMIT = 100;
 const DEFAULT_BITRATE = 192;
+const JOB_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isJobId = (value: string): boolean => JOB_ID_PATTERN.test(value);
 
 type EventType = JobEvent["type"];
 
@@ -82,8 +85,15 @@ function initialProgress(): JobProgress {
   return { percent: null, downloadedBytes: 0, totalBytes: null, speed: null, eta: null, detail: "Queued" };
 }
 
-async function removeDirs(...dirs: string[]): Promise<void> {
-  await Promise.all(dirs.map((dir) => fs.rm(dir, { recursive: true, force: true }).catch(() => undefined)));
+/** Removes UUID-named job directories under a trusted root. */
+async function removeDirs(root: string, ...names: string[]): Promise<void> {
+  await Promise.all(
+    names.map((name) => {
+      const safeName = path.basename(name);
+      if (!isJobId(safeName)) return Promise.resolve();
+      return fs.rm(path.join(root, safeName), { recursive: true, force: true }).catch(() => undefined);
+    }),
+  );
 }
 
 /** Old history files stored `videoId`; keep them readable and mark interrupted jobs. */
@@ -199,6 +209,7 @@ export class JobManager {
   }
 
   getJob(id: string): Job | null {
+    if (!isJobId(id)) return null;
     const job = this.jobs.get(id);
     return job ? structuredClone(job) : null;
   }
@@ -211,7 +222,9 @@ export class JobManager {
   }
 
   subscribe(id: string, listener: (event: JobEvent) => void): () => void {
-    if (!this.jobs.has(id)) throw new AppError("JOB_NOT_FOUND", "That job doesn't exist.", 404);
+    if (!isJobId(id) || !this.jobs.has(id)) {
+      throw new AppError("JOB_NOT_FOUND", "That job doesn't exist.", 404);
+    }
     const eventName = `job:${id}`;
     this.events.on(eventName, listener);
     return () => this.events.off(eventName, listener);
@@ -243,7 +256,8 @@ export class JobManager {
     }
     this.jobs.delete(id);
     await this.persist();
-    await removeDirs(this.tempDir(id), this.outDir(id));
+    await removeDirs(config.tempDir, id);
+    await removeDirs(config.downloadsDir, id);
   }
 
   /** Removes finished jobs past their TTL and any leftover folders. */
@@ -252,10 +266,10 @@ export class JobManager {
 
     for (const [id, job] of this.jobs) {
       if (!TERMINAL.has(job.status)) continue;
-      await removeDirs(this.tempDir(id));
+      await removeDirs(config.tempDir, id);
       if (job.finishedAt && job.finishedAt < cutoff) {
         this.jobs.delete(id);
-        await removeDirs(this.outDir(id));
+        await removeDirs(config.downloadsDir, id);
       }
     }
 
@@ -275,7 +289,7 @@ export class JobManager {
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const job = this.jobs.get(entry.name);
-      if (!job || shouldRemove(job)) await removeDirs(path.join(root, entry.name));
+      if (!job || shouldRemove(job)) await removeDirs(root, entry.name);
     }
   }
 
@@ -396,7 +410,8 @@ export class JobManager {
     job.finishedAt = Date.now();
     this.emit(job, "update");
     await this.persist();
-    await removeDirs(this.tempDir(job.id), this.outDir(job.id));
+    await removeDirs(config.tempDir, job.id);
+    await removeDirs(config.downloadsDir, job.id);
   }
 
   private setState(job: Job, status: Job["status"], stage: JobStage, detail: string): void {
@@ -421,17 +436,9 @@ export class JobManager {
   }
 
   private require(id: string): Job {
-    const job = this.jobs.get(id);
+    const job = isJobId(id) ? this.jobs.get(id) : undefined;
     if (!job) throw new AppError("JOB_NOT_FOUND", "That job doesn't exist.", 404);
     return job;
-  }
-
-  private tempDir(id: string): string {
-    return path.join(config.tempDir, id);
-  }
-
-  private outDir(id: string): string {
-    return path.join(config.downloadsDir, id);
   }
 
   private async persist(): Promise<void> {

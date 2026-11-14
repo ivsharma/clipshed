@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Capped time-input parsing to reject oversized values before running the unit
+  parser.
+- Validated job IDs and constrained cleanup paths before filesystem operations.
+
 ## [1.0.0] - 2026-11-14
 
 ### Added

@@ -12,11 +12,13 @@
  *
  * Returns null for invalid input.
  */
+const MAX_TIME_INPUT_LENGTH = 64;
+
 export function parseTime(input: string): number | null {
   if (typeof input !== "string") return null;
 
   const value = input.trim().toLowerCase().replace(/,/g, ".");
-  if (!value) return null;
+  if (!value || value.length > MAX_TIME_INPUT_LENGTH) return null;
 
   if (value.includes(":")) {
     const parts = value.split(":");

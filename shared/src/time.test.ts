@@ -29,6 +29,10 @@ describe("parseTime", () => {
       expect(parseTime(input)).toBeNull();
     },
   );
+
+  it("rejects oversized input before running the unit parser", () => {
+    expect(parseTime(`${"9".repeat(10_000)}h`)).toBeNull();
+  });
 });
 
 describe("formatClock", () => {
