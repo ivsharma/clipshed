@@ -18,6 +18,7 @@ Most downloaders fetch the entire video, then make you trim it afterward. Clipsh
 - **Fast or exact cut** — keyframe-aligned stream copy, or frame-accurate re-encode.
 - **Local and private** — yt-dlp and ffmpeg run on your machine. No account, no cloud, no uploads.
 - **Real job handling** — queue, live progress, cancellation, history, and cleanup.
+- **Windows desktop app** — an Electron build with yt-dlp, ffmpeg, and QuickJS bundled. No Node install or dev server on the target machine.
 
 ## Supported platforms
 
@@ -41,7 +42,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**.
 
-`npm run setup` downloads the standalone `yt-dlp.exe` and static `ffmpeg`/`ffprobe` builds into `bin/`. No Python install is required.
+`npm run setup` downloads the standalone `yt-dlp.exe`, static `ffmpeg`/`ffprobe` builds, and QuickJS into `bin/`. No Python install is required.
 
 Production-style run:
 
@@ -51,6 +52,32 @@ npm start
 ```
 
 Open **http://127.0.0.1:3000**. Or use `start.ps1`.
+
+## Windows desktop app
+
+Build a self-contained desktop app. The target PC does not need Node installed.
+
+```powershell
+npm install
+npm run setup
+npm run desktop:run    # run the desktop shell from source
+npm run desktop:pack   # unpacked build in release/win-unpacked
+npm run desktop:dist   # installer + portable exe in release/
+```
+
+`desktop:dist` creates:
+
+- `Clipshed-Setup-<version>.exe` — per-user installer with Start Menu and desktop shortcuts
+- `Clipshed-<version>-portable.exe` — no-install portable build
+
+The desktop app stores settings, history, downloads, and a managed yt-dlp copy in
+`%LOCALAPPDATA%\Clipshed` (development builds use `Clipshed Dev`). ffmpeg, ffprobe,
+and QuickJS run from the bundled resources. It starts the local API on a random
+loopback port and opens the real UI in an Electron window.
+
+Builds are currently unsigned, so Windows SmartScreen may warn on first launch.
+The installer is large because it includes Electron, ffmpeg, ffprobe, yt-dlp,
+and QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
 
 ## Configuration
 
@@ -63,6 +90,8 @@ Cookies stay on this machine and are never returned by the API or written to job
 The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 - [Architecture](docs/README_TECHNICAL.md#architecture)
+- [Desktop app (Electron)](docs/README_TECHNICAL.md#desktop-app-electron) — runtime model, data paths, packaging, updates, and package size
+- [Versioning and releases](docs/README_TECHNICAL.md#versioning-and-releases) — SemVer policy, release script, and tagging
 
 ## Limitations
 
