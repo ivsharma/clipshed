@@ -237,7 +237,7 @@ export function RangeSelector({
                     key={`${chapter.title}-chip-${index}`}
                     type="button"
                     onClick={() => handleChapter(chapter)}
-                    className="flex shrink-0 items-center gap-2 border border-[var(--line-strong)] px-2.5 py-1.5 text-left transition hover:border-[var(--red)] hover:bg-[rgba(217,58,31,0.05)]"
+                    className="flex shrink-0 items-center gap-2 border border-[var(--line-strong)] px-2.5 py-1.5 text-left transition hover:border-[var(--red)] hover:bg-[var(--red-hover)]"
                   >
                     <span className="font-mono text-[10px] text-[var(--red)]">{formatClock(chapter.start)}</span>
                     <span className="max-w-[180px] truncate text-[12px] text-[var(--ink-soft)]">{chapter.title}</span>

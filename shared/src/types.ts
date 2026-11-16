@@ -133,6 +133,24 @@ export interface Health {
   cookiesConfigured: boolean;
 }
 
+export interface ReleaseInfo {
+  /** Version without the leading `v` or build metadata. */
+  version: string;
+  tag: string;
+  name: string;
+  url: string;
+  publishedAt: string | null;
+  prerelease: boolean;
+}
+
+export interface UpdateCheck {
+  currentVersion: string;
+  latest: ReleaseInfo | null;
+  updateAvailable: boolean;
+  /** ISO timestamp of when GitHub was queried. */
+  checkedAt: string;
+}
+
 export interface SettingsPayload {
   settings: Settings;
   health: Health;

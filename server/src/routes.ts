@@ -16,6 +16,7 @@ import { getProbe } from "./media/probe";
 import { getHealth, updateYtDlp } from "./services/binaries";
 import type { JobManager } from "./services/job-manager";
 import { getSettings, updateSettings } from "./services/settings";
+import { checkForUpdates } from "./services/updates";
 
 function parseBody<T>(schema: ZodType<T>, body: unknown): T {
   const parsed = schema.safeParse(body);
@@ -35,6 +36,10 @@ export function apiRouter(manager: JobManager): Router {
   api.post("/ytdlp/update", async (_req, res) => {
     const result = await updateYtDlp();
     res.json({ ...result, health: await getHealth() });
+  });
+
+  api.get("/updates/check", async (_req, res) => {
+    res.json(await checkForUpdates());
   });
 
   api.post("/probe", async (req, res) => {

@@ -43,7 +43,7 @@ export function HistoryList({ jobs, onRefresh, onDelete, refreshing }: HistoryLi
             return (
               <div
                 key={job.id}
-                className="group flex items-center gap-3 border-b border-[var(--line)] py-2.5 transition hover:bg-[rgba(20,19,16,0.03)]"
+                className="group flex items-center gap-3 border-b border-[var(--line)] py-2.5 transition hover:bg-[var(--hover)]"
               >
                 <div className="relative h-9 w-16 shrink-0 overflow-hidden border border-[var(--ink)] bg-[var(--ink)]">
                   {job.thumbnail ? (
@@ -94,7 +94,7 @@ export function HistoryList({ jobs, onRefresh, onDelete, refreshing }: HistoryLi
                     <button
                       type="button"
                       onClick={() => onDelete(job)}
-                      className="btn-ghost h-7 w-7 hover:bg-[var(--red)] hover:text-white"
+                      className="btn-ghost h-7 w-7 hover:bg-[var(--red)] hover:text-[var(--on-red)]"
                       aria-label={`Delete ${job.title}`}
                       title="Delete job and files"
                     >

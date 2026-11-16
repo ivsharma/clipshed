@@ -28,8 +28,8 @@ export function VideoCard({ video }: { video: ProbeResult }) {
         </span>
 
         {video.isLive ? (
-          <span className="absolute left-0 top-0 flex items-center gap-1 bg-[var(--red)] px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.12em] text-white">
-            <span className="h-1.5 w-1.5 animate-pulse bg-white" />
+          <span className="absolute left-0 top-0 flex items-center gap-1 bg-[var(--red)] px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.12em] text-[var(--on-red)]">
+            <span className="h-1.5 w-1.5 animate-pulse bg-[var(--on-red)]" />
             LIVE
           </span>
         ) : null}

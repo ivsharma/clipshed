@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle, FileText, Globe2, Loader2, RefreshCw, Shield, X } from "lucide-react";
-import type { CookiesBrowser, CookiesMode, Health, Settings } from "@clipshed/shared";
+import { AlertTriangle, CheckCircle, Contrast, ExternalLink, FileText, Globe2, Loader2, Moon, RefreshCw, Shield, Sun, X } from "lucide-react";
+import type { CookiesBrowser, CookiesMode, Health, Settings, UpdateCheck } from "@clipshed/shared";
 import type { LucideIcon } from "lucide-react";
+import type { Theme } from "../lib/theme";
 import { cn } from "../lib/cn";
 
 interface SettingsDialogProps {
@@ -10,8 +11,11 @@ interface SettingsDialogProps {
   settings: Settings | null;
   health: Health | null;
   saving: boolean;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   onSave: (settings: Settings) => Promise<void>;
   onUpdateYtDlp: () => Promise<{ ok: boolean; output: string }>;
+  onCheckUpdates: () => Promise<UpdateCheck>;
 }
 
 const MODES: Array<{ id: CookiesMode; title: string; description: string; icon: LucideIcon }> = [
@@ -32,10 +36,43 @@ const BROWSER_LABELS: Record<CookiesBrowser, string> = {
   vivaldi: "Vivaldi",
 };
 
-export function SettingsDialog({ open, onClose, settings, health, saving, onSave, onUpdateYtDlp }: SettingsDialogProps) {
+const THEMES: Array<{
+  id: Theme;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  swatches: [string, string, string];
+}> = [
+  {
+    id: "light",
+    title: "Light",
+    description: "Warm paper, ink, and red.",
+    icon: Sun,
+    swatches: ["#f1eee6", "#141310", "#d93a1f"],
+  },
+  {
+    id: "dark",
+    title: "Dark",
+    description: "Warm charcoal with softer ink and borders.",
+    icon: Moon,
+    swatches: ["#1d1a16", "#ded7c8", "#e2664c"],
+  },
+  {
+    id: "dark-contrast",
+    title: "Dark contrast",
+    description: "Black and white with maximum legibility.",
+    icon: Contrast,
+    swatches: ["#050505", "#ffffff", "#ff4a2a"],
+  },
+];
+
+export function SettingsDialog({ open, onClose, settings, health, saving, theme, onThemeChange, onSave, onUpdateYtDlp, onCheckUpdates }: SettingsDialogProps) {
   const [draft, setDraft] = useState<Settings | null>(settings);
   const [updating, setUpdating] = useState(false);
   const [updateOutput, setUpdateOutput] = useState<string | null>(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheck | null>(null);
+  const [updateCheckError, setUpdateCheckError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,7 +99,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
 
   if (!draft) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,19,16,0.62)] p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
         <div className="panel flex items-center gap-3 px-5 py-4 font-mono text-[12px] text-[var(--ink-soft)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading settings…
@@ -93,13 +130,36 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
     }
   };
 
+  const handleCheckUpdates = async () => {
+    setCheckingUpdates(true);
+    setUpdateCheckError(null);
+    try {
+      setUpdateCheck(await onCheckUpdates());
+    } catch (error) {
+      setUpdateCheckError(error instanceof Error ? error.message : "Could not check for updates.");
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
+
+  const checkedAtLabel = updateCheck
+    ? new Date(updateCheck.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+  const publishedLabel = updateCheck?.latest?.publishedAt
+    ? new Date(updateCheck.latest.publishedAt).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+
   const ffmpegShort = health?.ffmpegVersion
     ? (health.ffmpegVersion.match(/ffmpeg version (\S+)/)?.[1] ?? health.ffmpegVersion.slice(0, 36))
     : null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(20,19,16,0.62)] p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay)] p-0 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -108,9 +168,9 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="panel animate-fade-in max-h-[92vh] w-full max-w-xl overflow-hidden shadow-[8px_8px_0_rgba(20,19,16,0.22)]"
+        className="panel animate-fade-in flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden shadow-[8px_8px_0_var(--shadow)]"
       >
-        <div className="flex items-start justify-between border-b border-[var(--line-strong)] px-5 py-4 sm:px-6">
+        <div className="flex shrink-0 items-start justify-between border-b border-[var(--line-strong)] px-5 py-4 sm:px-6">
           <div>
             <div className="mono-label text-[var(--red)]">Local settings</div>
             <h2 id="settings-title" className="display mt-1 text-3xl text-[var(--ink)]">
@@ -122,7 +182,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
           </button>
         </div>
 
-        <div className="scrollbar-thin max-h-[calc(92vh-140px)] overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <section>
             <div className="mb-3 flex items-end justify-between">
               <div>
@@ -146,7 +206,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
                     className={cn(
                       "flex flex-col items-start gap-2 border p-3 text-left transition",
                       selected
-                        ? "border-[var(--red)] bg-[rgba(217,58,31,0.06)]"
+                        ? "border-[var(--red)] bg-[var(--red-soft)]"
                         : "border-[var(--line-strong)] bg-[var(--paper-raised)] hover:border-[var(--ink)]",
                     )}
                   >
@@ -259,6 +319,140 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
             ) : null}
           </section>
 
+          <section className="mt-6">
+            <div className="mb-3 flex items-end justify-between gap-4">
+              <div>
+                <div className="mono-label">04 / Appearance</div>
+                <p className="mt-1 max-w-sm text-[12px] leading-relaxed text-[var(--ink-mute)]">
+                  Choose a palette. It applies immediately and is saved on this device.
+                </p>
+              </div>
+              <span className="badge shrink-0">{THEMES.find((option) => option.id === theme)?.title ?? "Light"}</span>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3">
+              {THEMES.map((option) => {
+                const Icon = option.icon;
+                const selected = theme === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onThemeChange(option.id)}
+                    aria-pressed={selected}
+                    className={cn(
+                      "flex flex-col items-start gap-2 border p-3 text-left transition",
+                      selected
+                        ? "border-[var(--red)] bg-[var(--red-soft)]"
+                        : "border-[var(--line-strong)] bg-[var(--paper-raised)] hover:border-[var(--ink)]",
+                    )}
+                  >
+                    <span className="flex w-full items-center justify-between gap-2">
+                      <Icon className={selected ? "h-4 w-4 text-[var(--red)]" : "h-4 w-4 text-[var(--ink-mute)]"} />
+                      <span className="flex h-4 w-14 overflow-hidden border border-[var(--line-strong)]" aria-hidden="true">
+                        {option.swatches.map((color) => (
+                          <span key={color} className="flex-1" style={{ background: color }} />
+                        ))}
+                      </span>
+                    </span>
+                    <span>
+                      <span className="block text-[12px] font-semibold text-[var(--ink)]">{option.title}</span>
+                      <span className="mt-0.5 block text-[11px] leading-relaxed text-[var(--ink-mute)]">
+                        {option.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <div className="mb-3 flex items-end justify-between gap-4">
+              <div>
+                <div className="mono-label">05 / Updates</div>
+                <p className="mt-1 max-w-sm text-[12px] leading-relaxed text-[var(--ink-mute)]">
+                  Check the public GitHub releases. Nothing is downloaded automatically.
+                </p>
+              </div>
+              <span className="badge shrink-0">GitHub</span>
+            </div>
+
+            <div className="border border-[var(--line-strong)] bg-[var(--paper)] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="mono-label">Current version</div>
+                  <div className="mt-1 font-mono text-[13px] text-[var(--ink)]">
+                    {updateCheck?.currentVersion ?? health?.appVersion ?? "dev"}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCheckUpdates()}
+                  disabled={checkingUpdates}
+                  className="btn-secondary h-9 shrink-0 gap-1.5 px-3 text-[10px]"
+                >
+                  {checkingUpdates ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                  {checkingUpdates ? "Checking…" : "Check for updates"}
+                </button>
+              </div>
+
+              {updateCheck ? (
+                <div className="mt-3 border-t border-[var(--line)] pt-3">
+                  {updateCheck.latest ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={cn("badge", updateCheck.updateAvailable ? "badge-accent" : "badge-success")}>
+                            {updateCheck.updateAvailable ? "Update available" : "Up to date"}
+                          </span>
+                          {updateCheck.latest.prerelease ? (
+                            <span className="badge badge-warning">Pre-release</span>
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-soft)]">
+                          {updateCheck.updateAvailable
+                            ? `Clipshed ${updateCheck.latest.version} is available. You're running ${updateCheck.currentVersion}.`
+                            : `You're running the latest release (${updateCheck.latest.version}).`}
+                        </p>
+                        <p className="mt-1 font-mono text-[10px] leading-relaxed text-[var(--ink-mute)]">
+                          {updateCheck.latest.name}
+                          {publishedLabel ? ` · ${publishedLabel}` : ""}
+                          {checkedAtLabel ? ` · checked ${checkedAtLabel}` : ""}
+                        </p>
+                      </div>
+
+                      {updateCheck.updateAvailable ? (
+                        <a
+                          href={updateCheck.latest.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-primary h-9 shrink-0 gap-1.5 px-3 text-[10px]"
+                        >
+                          Open release
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <CheckCircle className="h-4 w-4 shrink-0 text-[var(--green)]" />
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] leading-relaxed text-[var(--ink-mute)]">
+                      No published releases were found.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              {updateCheckError ? (
+                <div className="mt-3 flex items-start gap-2 border-l-2 border-l-[var(--red)] bg-[var(--paper-raised)] px-3 py-2 text-[11px] leading-relaxed text-[var(--red)]">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {updateCheckError}
+                </div>
+              ) : null}
+            </div>
+          </section>
+
           {saveError ? (
             <div className="mt-4 flex items-start gap-2 border-l-2 border-l-[var(--red)] bg-[var(--paper)] px-3 py-2 text-[12px] leading-relaxed text-[var(--red)]">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -274,7 +468,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, onSave
           ) : null}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--line-strong)] px-5 py-3.5 sm:px-6">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--line-strong)] px-5 py-3.5 sm:px-6">
           <button type="button" onClick={onClose} className="btn-secondary h-10 px-4 text-[11px]">
             Cancel
           </button>

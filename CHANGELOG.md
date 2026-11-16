@@ -7,6 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Light, Dark, and Dark contrast themes, selectable in Settings and remembered
+  per device.
+- In-app update checks against GitHub Releases, with release links and
+  pre-release labels.
+
 ## [1.0.1] - 2026-11-14
 
 ### Fixed

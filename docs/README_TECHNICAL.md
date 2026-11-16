@@ -49,6 +49,8 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 - Cancellation that kills the whole yt-dlp/ffmpeg process tree
 - Job history with re-download and cleanup
 - Optional cookies for age-restricted, private, or bot-checked videos
+- Light, Dark, and Dark contrast themes, remembered per device
+- Check for updates against GitHub Releases
 - Update yt-dlp from the settings dialog
 - **Windows desktop app** — Electron build with yt-dlp, ffmpeg/ffprobe, and QuickJS bundled; no Node install needed at runtime
 - Local-only; no account, no cloud, no telemetry
@@ -418,9 +420,15 @@ Click the gear icon in the top-right.
 - **Cookies file** — point to a Netscape-format `cookies.txt` exported from a browser extension.
 - **From browser** — ask yt-dlp to read cookies directly from Chrome, Edge, Firefox, Brave, Chromium, Opera, or Vivaldi.
 - **Prefer H.264** — keep MP4 compatibility high. Most sites offer H.264 up to 1080p.
+- **Theme** — Light, Dark, or Dark contrast. Applies immediately and is remembered on this device.
+- **Check for updates** — compares the running version with the newest published GitHub release. Shows the release link, date, and whether it is a pre-release. Results are cached for 10 minutes. Pre-releases are included because Clipshed publishes releases as pre-releases until they are validated.
 - **Update yt-dlp** — sites change often; an outdated yt-dlp is the most common cause of failures.
 
 Cookies stay on this machine and are never returned by the API or written to the job history.
+
+The theme is stored in a loopback cookie rather than `localStorage` because the
+desktop server uses a random port each launch. Cookies are scoped by host, while
+`localStorage` is scoped by origin (host plus port) and would reset every time.
 
 The local setup panel also shows the running Clipshed version, yt-dlp, ffmpeg, and Node versions.
 
@@ -449,6 +457,7 @@ clipshed/
       job-manager.ts      Queue, job lifecycle, and history persistence
       settings.ts         Settings and cookie configuration
       binaries.ts         yt-dlp/ffmpeg checks and updates
+      updates.ts          GitHub release lookup and version comparison
   web/src/
     App.tsx               Page state and wiring
     components/           Landing, format picker, range selector, job panel, etc.

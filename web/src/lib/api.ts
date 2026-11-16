@@ -6,6 +6,7 @@ import type {
   ProbeResult,
   Settings,
   SettingsPayload,
+  UpdateCheck,
 } from "@clipshed/shared";
 
 export class ApiError extends Error {
@@ -108,5 +109,9 @@ export const api = {
       "/api/ytdlp/update",
       { method: "POST" },
     );
+  },
+
+  checkForUpdates(): Promise<UpdateCheck> {
+    return request<UpdateCheck>("/api/updates/check");
   },
 };

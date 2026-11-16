@@ -22,6 +22,7 @@ import { SummaryPanel } from "./components/SummaryPanel";
 import { UrlForm } from "./components/UrlForm";
 import { ProbeSkeleton, VideoCard } from "./components/VideoCard";
 import { useJobEvents } from "./hooks/useJobEvents";
+import { useTheme } from "./hooks/useTheme";
 import { ApiError, api } from "./lib/api";
 import { defaultHeight, estimateSizes, findQuality, selectedDurationLabel, selectionProblem, type Selection } from "./lib/selection";
 
@@ -60,6 +61,7 @@ export default function App() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const { theme, setTheme } = useTheme();
   const [health, setHealth] = useState<Health | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -242,6 +244,8 @@ export default function App() {
     return result;
   };
 
+  const handleCheckUpdates = () => api.checkForUpdates();
+
   const openSettings = () => {
     setSettingsOpen(true);
     if (!settings) void refreshSettings();
@@ -380,8 +384,11 @@ export default function App() {
         settings={settings}
         health={health}
         saving={savingSettings}
+        theme={theme}
+        onThemeChange={setTheme}
         onSave={handleSaveSettings}
         onUpdateYtDlp={handleUpdateYtDlp}
+        onCheckUpdates={handleCheckUpdates}
       />
 
       {toast ? (

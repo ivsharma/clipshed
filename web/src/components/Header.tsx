@@ -15,7 +15,7 @@ export function Header({ health, onOpenSettings, onHome }: HeaderProps) {
       <div className="mx-auto flex w-full max-w-6xl items-end justify-between gap-4 px-4 pb-4 pt-5 sm:px-6 sm:pt-7">
         <button type="button" onClick={onHome} className="group flex items-end gap-3 text-left" aria-label="Clipshed home">
           <span className="relative flex h-10 w-10 items-center justify-center border border-[var(--ink)] bg-[var(--red)] transition-transform duration-150 group-hover:-translate-y-0.5">
-            <Scissors className="h-[18px] w-[18px] text-white" strokeWidth={2.4} />
+            <Scissors className="h-[18px] w-[18px] text-[var(--on-red)]" strokeWidth={2.4} />
             <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 border border-[var(--ink)] bg-[var(--paper-raised)]" />
           </span>
 

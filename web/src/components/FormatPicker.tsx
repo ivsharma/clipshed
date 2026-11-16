@@ -87,7 +87,7 @@ export function FormatPicker({
                   <Icon className="h-3.5 w-3.5" />
                   {tab.title}
                 </span>
-                <span className={selected ? "mt-0.5 block text-[11px] text-[#cfc9bc]" : "mt-0.5 block text-[11px] text-[var(--ink-mute)]"}>
+                <span className={selected ? "mt-0.5 block text-[11px] text-[var(--format-muted)]" : "mt-0.5 block text-[11px] text-[var(--ink-mute)]"}>
                   {disabled ? "No video stream" : tab.subtitle}
                 </span>
               </span>

@@ -81,7 +81,7 @@ and QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-s
 
 ## Configuration
 
-Open the gear icon to configure cookies (for age-restricted or login-required posts), H.264 preference, and yt-dlp updates. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.
+Open the gear icon to choose Light, Dark, or Dark contrast, configure cookies (for age-restricted or login-required posts), H.264 preference, check for app updates, and update yt-dlp. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.
 
 Cookies stay on this machine and are never returned by the API or written to job history.
 
