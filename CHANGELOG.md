@@ -16,6 +16,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Tauri v2 Windows app with the same React UI/API and a bundled Node sidecar:
   **97.6 MB** NSIS installer and **295.5 MB** installed, using the shared
   WebView2 runtime instead of bundling Chromium.
+- Windows downloads now get unique names in the Downloads folder and show a
+  completion notification. A second launch focuses the running window, and
+  external links open in the default browser instead of inside the app.
 
 ### Changed
 

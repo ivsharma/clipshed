@@ -1,10 +1,20 @@
 #[cfg(target_os = "windows")]
+use std::path::Path;
+#[cfg(target_os = "windows")]
 use std::sync::Mutex;
 #[cfg(target_os = "windows")]
 use std::time::{Duration, Instant};
 
 use tauri::Manager;
 
+#[cfg(target_os = "windows")]
+use tauri::webview::{
+  DownloadEvent, NewWindowResponse, PermissionKind, PermissionResponse,
+};
+#[cfg(target_os = "windows")]
+use tauri_plugin_notification::NotificationExt;
+#[cfg(target_os = "windows")]
+use tauri_plugin_opener::OpenerExt;
 #[cfg(target_os = "windows")]
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 #[cfg(target_os = "windows")]
@@ -18,7 +28,22 @@ pub fn run() {
   let builder = tauri::Builder::default();
 
   #[cfg(target_os = "windows")]
+  let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+    if let Some(window) = app.get_webview_window("main") {
+      let _ = window.unminimize();
+      let _ = window.show();
+      let _ = window.set_focus();
+    }
+  }));
+
+  #[cfg(target_os = "windows")]
   let builder = builder.plugin(tauri_plugin_shell::init());
+
+  #[cfg(target_os = "windows")]
+  let builder = builder.plugin(tauri_plugin_notification::init());
+
+  #[cfg(target_os = "windows")]
+  let builder = builder.plugin(tauri_plugin_opener::init());
 
   builder
     .setup(|app| {
@@ -44,7 +69,71 @@ pub fn run() {
           .first()
           .cloned()
           .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No window configuration"))?;
-        let window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?.build()?;
+
+        let notification_handle = app.handle().clone();
+        let navigation_handle = app.handle().clone();
+        let new_window_handle = app.handle().clone();
+
+        let window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?
+          .on_permission_request(|_webview, kind| match kind {
+            PermissionKind::AutomaticDownloads | PermissionKind::ClipboardRead => {
+              PermissionResponse::Allow
+            }
+            _ => PermissionResponse::Default,
+          })
+          .on_download(move |_webview, event| {
+            match event {
+              DownloadEvent::Requested { destination, .. } => {
+                log::info!("Download requested: {}", destination.display());
+                if destination.is_absolute() && destination.extension().is_some() {
+                  *destination = unique_download_path(destination);
+                  log::info!("Saving download to {}", destination.display());
+                }
+              }
+              DownloadEvent::Finished { path, success, .. } => {
+                if success {
+                  if let Some(path) = path {
+                    log::info!("Download finished: {}", path.display());
+                    let name = path
+                      .file_name()
+                      .and_then(|value| value.to_str())
+                      .unwrap_or("File");
+                    if let Err(error) = notification_handle
+                      .notification()
+                      .builder()
+                      .title("Clipshed")
+                      .body(format!("{name} saved to Downloads"))
+                      .show()
+                    {
+                      log::warn!("Could not show the download notification: {error}");
+                    }
+                  }
+                }
+              }
+              _ => {}
+            }
+            true
+          })
+          .on_navigation(move |url| {
+            if is_local_server_url(url) {
+              return true;
+            }
+            if matches!(url.scheme(), "http" | "https") {
+              if let Err(error) = navigation_handle.opener().open_url(url.as_str(), None::<&str>) {
+                log::warn!("Could not open external link {url}: {error}");
+              }
+            }
+            false
+          })
+          .on_new_window(move |url, _features| {
+            if matches!(url.scheme(), "http" | "https") {
+              if let Err(error) = new_window_handle.opener().open_url(url.as_str(), None::<&str>) {
+                log::warn!("Could not open external link {url}: {error}");
+              }
+            }
+            NewWindowResponse::Deny
+          })
+          .build()?;
         window.show()?;
       }
 
@@ -182,4 +271,38 @@ fn start_sidecar(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     "Clipshed server did not start on 127.0.0.1:43123",
   )
   .into())
+}
+
+#[cfg(target_os = "windows")]
+fn is_local_server_url(url: &tauri::Url) -> bool {
+  url.scheme() == "http"
+    && url.host_str() == Some("127.0.0.1")
+    && url.port_or_known_default() == Some(43123)
+}
+
+#[cfg(target_os = "windows")]
+fn unique_download_path(destination: &Path) -> std::path::PathBuf {
+  if !destination.exists() {
+    return destination.to_path_buf();
+  }
+
+  let parent = destination.parent().unwrap_or_else(|| Path::new("."));
+  let stem = destination
+    .file_stem()
+    .and_then(|value| value.to_str())
+    .unwrap_or("download");
+  let extension = destination.extension().and_then(|value| value.to_str());
+
+  for index in 1..1000 {
+    let name = match extension {
+      Some(extension) => format!("{stem} ({index}).{extension}"),
+      None => format!("{stem} ({index})"),
+    };
+    let candidate = parent.join(name);
+    if !candidate.exists() {
+      return candidate;
+    }
+  }
+
+  destination.to_path_buf()
 }

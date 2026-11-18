@@ -142,7 +142,7 @@ src-tauri/gen/android/app/build/outputs/apk/x86_64/release/app-x86_64-release.ap
 With Developer Mode enabled, the normal `npx tauri android build --apk --target
 aarch64` path works without the wrapper script.
 
-### Phase 2: Windows Tauri shell — core complete
+### Phase 2: Windows Tauri shell — complete
 
 Implemented:
 
@@ -161,6 +161,15 @@ Implemented:
 - `scripts/stage-tauri-windows.mjs` handles the sidecar naming.
 - `tauri.windows.conf.json` keeps Windows-only resources and `externalBin`
   out of the Android build.
+- WebView2 downloads are handled by the shell: the file is saved to the user's
+  Downloads folder with a unique `(1)`, `(2)`, … name when needed, and a
+  completion notification names the saved file.
+- A single-instance lock makes a second launch restore and focus the existing
+  window instead of starting another server.
+- The navigation guard keeps the webview on `127.0.0.1:43123`; `http` and
+  `https` links, including `window.open` popups, open in the default browser.
+- Automatic downloads and clipboard reads are allowed by the WebView2
+  permission handler.
 
 Measured:
 
@@ -181,14 +190,15 @@ Verified:
   green;
 - a 10-second MP4 job completes through the Tauri-hosted Node server;
 - the file endpoint serves the finished MP4;
-- the installed app and Node sidecar shut down together.
+- the installed app and Node sidecar shut down together;
+- repeated downloads of the same title save as ` (1)`, ` (2)`, …;
+- a completion notification appears after a download finishes;
+- a second launch exits and restores/focuses the running window;
+- `https://example.com` opens in the default browser while the app stays on its
+  local page.
 
-Remaining Phase 2 polish:
+Remaining before retiring Electron:
 
-- Downloads still use WebView2's default handling; unique naming and completion
-  notifications are not reimplemented yet.
-- There is no single-instance lock; a second launch can race on port 43123.
-- External-link/navigation guard is not implemented.
 - The NSIS installer is unsigned.
 
 ### Phase 3: optional Windows Rust backend
@@ -243,8 +253,8 @@ The Windows Tauri shell (Phase 2) needs no additional toolchain.
   responses between the Node and Kotlin servers.
 - The Windows Tauri app still ships a 95.5 MB Node sidecar. Phase 3 moves it to
   Rust and removes that runtime.
-- WebView2 downloads, unique file naming, notifications, and single-instance
-  handling still need polish before Electron can be retired.
+- Electron remains the fallback until the Windows Tauri installer is code-signed
+  and the packaged build gets a final smoke test on a clean machine.
 - Range-download progress is coarse on Android because ffmpeg performs the cut;
   improving it needs a separate progress parser.
 - The Android release APK and the Windows NSIS installer are currently signed
