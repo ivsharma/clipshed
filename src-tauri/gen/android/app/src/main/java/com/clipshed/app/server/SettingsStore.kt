@@ -20,6 +20,7 @@ class SettingsStore(private val context: Context) {
     private val validModes = setOf("none", "file", "browser")
     private val validBrowsers =
         setOf("chrome", "edge", "firefox", "brave", "chromium", "opera", "vivaldi")
+    private val cookiesEnabled = false
 
     suspend fun get(): Settings = mutex.withLock {
         cached ?: load().also { cached = it }
@@ -60,12 +61,14 @@ class SettingsStore(private val context: Context) {
     }
 
     fun cookiesArgs(settings: Settings): List<String> {
+        if (!cookiesEnabled) return emptyList()
         if (settings.cookiesMode != "file") return emptyList()
         val file = resolveCookiesFile(settings) ?: return emptyList()
         return listOf("--cookies", file.absolutePath)
     }
 
     fun isCookiesConfigured(settings: Settings): Boolean {
+        if (!cookiesEnabled) return false
         if (settings.cookiesMode == "browser") return false
         return settings.cookiesMode == "file" && resolveCookiesFile(settings) != null
     }

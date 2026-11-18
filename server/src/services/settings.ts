@@ -45,6 +45,7 @@ export function resolveCookiesFile(settings: Settings): string | null {
 }
 
 export function isCookiesConfigured(settings: Settings): boolean {
+  if (!config.cookiesEnabled) return false;
   if (settings.cookiesMode === "browser") return true;
   if (settings.cookiesMode === "file") {
     const file = resolveCookiesFile(settings);

@@ -37,8 +37,8 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 ## Features
 
 - **YouTube:** watch links, `youtu.be`, Shorts, embeds, and livestream replays
-- **Facebook:** `watch` links, reels, page videos, and `fb.watch` links (experimental; some posts need cookies)
-- **Instagram:** posts, reels, and IGTV (experimental; most content needs cookies from a signed-in browser)
+- **Facebook:** `watch` links, reels, page videos, and `fb.watch` links (experimental; some posts need a signed-in session, and cookie sign-in is coming soon)
+- **Instagram:** posts, reels, and IGTV (experimental; most content needs a signed-in session, and cookie sign-in is coming soon)
 - **MP4** with selectable resolution (H.264 up to 1080p by default; VP9/AV1 at higher resolutions)
 - **MP3** at 128, 192, 256, or 320 kbps
 - **Both** — MP4 and MP3 for the same range in one job
@@ -48,7 +48,7 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 - Live progress over SSE: stage, percent, bytes, speed, ETA
 - Cancellation that kills the whole yt-dlp/ffmpeg process tree
 - Job history with re-download and cleanup
-- Optional cookies for age-restricted, private, or bot-checked videos
+- Cookie-based access for age-restricted, private, or bot-checked videos is coming soon
 - Light, Dark, and Dark contrast themes, remembered per device
 - Check for updates against GitHub Releases
 - Update yt-dlp from the settings dialog
@@ -434,15 +434,13 @@ and checksum claims should be re-measured after any further packaging changes.
 
 Click the gear icon in the top-right.
 
-- **No cookies** — works for most public videos.
-- **Cookies file** — point to a Netscape-format `cookies.txt` exported from a browser extension.
-- **From browser** — ask yt-dlp to read cookies directly from Chrome, Edge, Firefox, Brave, Chromium, Opera, or Vivaldi.
+- **Cookie sign-in** — coming soon. The cookie options are disabled in Settings and marked “Coming soon”. Public videos work without cookies.
 - **Prefer H.264** — keep MP4 compatibility high. Most sites offer H.264 up to 1080p.
 - **Theme** — Light, Dark, or Dark contrast. Applies immediately and is remembered on this device.
 - **Check for updates** — compares the running version with the newest published GitHub release. Shows the release link, date, and whether it is a pre-release. Results are cached for 10 minutes. Pre-releases are included because Clipshed publishes releases as pre-releases until they are validated.
 - **Update yt-dlp** — sites change often; an outdated yt-dlp is the most common cause of failures.
 
-Cookies stay on this machine and are never returned by the API or written to the job history.
+Cookie-based access remains in the backend for a future release, but it is not used while the UI is disabled.
 
 The theme is stored in a loopback cookie rather than `localStorage` because the
 desktop server uses a random port each launch. Cookies are scoped by host, while
@@ -615,7 +613,7 @@ updates itself from Settings.
 ## Troubleshooting
 
 **“Sign in to confirm you’re not a bot”**  
-Open Settings and add cookies from a signed-in browser (or a `cookies.txt` file). You can also try updating yt-dlp.
+Cookie sign-in is coming soon, so this video may not be fetchable yet. Try a different network or wait and try again.
 
 **“Requested format is not available”**  
 The selected quality disappeared or is region/account-specific. Pick another quality or update yt-dlp.
@@ -654,11 +652,9 @@ runs as your normal user and does not need administrator rights.
 The package includes Electron, ffmpeg, yt-dlp, and QuickJS. See
 [Package size](#package-size) for the breakdown and reduction options.
 
-**Cookies from Chrome fail**  
-Close Chrome completely, then retry. Chrome can lock its cookie database while running. Firefox often works without closing. A `cookies.txt` file is the most reliable option.
-
-**Opera GX**<br>
-yt-dlp’s browser mode only reads **Opera Stable**, not Opera GX. Export a `cookies.txt` file from Opera GX and choose **Cookies file** in Settings instead.
+**Cookie troubleshooting**<br>
+Cookie sign-in is currently disabled and shown as “Coming soon”. The browser-cookie
+troubleshooting steps will return when the feature is re-enabled.
 
 **Port 3000 or 5173 is already in use**  
 This only affects the browser workflows. Stop the other process, or set `PORT`
@@ -671,7 +667,7 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 ## Limitations
 
 - Single videos only; playlists and channels are rejected.
-- Facebook and Instagram support depends on yt-dlp's extractors. Many posts need cookies from a signed-in browser, and some posts without a video height can only be downloaded as MP3. Treat these two platforms as experimental until you've tested your own links.
+- Facebook and Instagram support depends on yt-dlp's extractors. Many posts need a signed-in session (cookie sign-in is coming soon), and some posts without a video height can only be downloaded as MP3. Treat these two platforms as experimental until you've tested your own links.
 - Active live streams aren't supported; livestream replays are.
 - No subtitles, thumbnail embedding, or SponsorBlock yet.
 - No authentication or multi-user support. The server binds to `127.0.0.1`.

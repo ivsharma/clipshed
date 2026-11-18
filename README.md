@@ -25,8 +25,8 @@ Most downloaders fetch the entire video, then make you trim it afterward. Clipsh
 | Platform | Status | What works |
 |---|---|---|
 | **YouTube** | Stable | Watch links, `youtu.be`, Shorts, embeds, livestream replays |
-| **Facebook** | Experimental | `watch` links, reels, page videos, `fb.watch`; some posts need cookies |
-| **Instagram** | Experimental | Posts, reels; some content needs cookies from a signed-in browser |
+| **Facebook** | Experimental | `watch` links, reels, page videos, `fb.watch`; some posts need a signed-in session (cookies coming soon) |
+| **Instagram** | Experimental | Posts, reels; some content needs a signed-in session (cookies coming soon) |
 
 Facebook and Instagram support depends on yt-dlp's extractors. See [Limitations](docs/README_TECHNICAL.md#limitations) before relying on them.
 
@@ -122,9 +122,9 @@ symlink workaround, measured sizes, and current limitations.
 
 ## Configuration
 
-Open the gear icon to choose Light, Dark, or Dark contrast, configure cookies (for age-restricted or login-required posts), H.264 preference, check for app updates, and update yt-dlp. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.
+Open the gear icon to choose Light, Dark, or Dark contrast, set H.264 preference, check for app updates, and update yt-dlp. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.
 
-Cookies stay on this machine and are never returned by the API or written to job history.
+Cookie-based sign-in is coming soon. Public videos work without cookies.
 
 ## Documentation
 
@@ -138,7 +138,7 @@ The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 - Single videos only; playlists and channels are rejected.
 - Active live streams aren't supported; replays are.
-- Facebook and Instagram are experimental and may need cookies.
+- Facebook and Instagram are experimental and may need a signed-in session (cookie sign-in is coming soon).
 - No subtitles, SponsorBlock, or compression presets yet.
 - Windows-first setup; the server is local-only and binds to `127.0.0.1`.
 

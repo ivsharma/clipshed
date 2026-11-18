@@ -70,8 +70,8 @@ Implemented in `src-tauri`. The Android server lives under
   server. The server also serves the built React UI, so the frontend still uses
   relative `/api` paths and SSE.
 - The Ktor server implements the existing API: health, probe, settings, cookies
-  import, jobs, SSE events, cancel, delete, file serving, MediaStore save,
-  updates check, and yt-dlp update.
+  import (backend only; the UI is disabled), jobs, SSE events, cancel, delete,
+  file serving, MediaStore save, updates check, and yt-dlp update.
 - `youtubedl-android` 0.18.1 provides Python, yt-dlp, ffmpeg, and QuickJS. yt-dlp
   updates automatically on first launch and from Settings.
 - A foreground `DownloadService` keeps downloads alive when the app is
@@ -79,8 +79,8 @@ Implemented in `src-tauri`. The Android server lives under
 - Finished files are published to `Downloads/Clipshed` through MediaStore.
   The shared UI detects Android and calls `POST /api/jobs/{id}/save` instead of
   navigating to a file URL.
-- The Settings dialog accepts a Netscape-format `cookies.txt` import on Android.
-  Browser-cookie mode is hidden there.
+- Cookie import remains in the backend, but the Settings UI is disabled and
+  marked “Coming soon”. Existing cookie settings are ignored.
 - The Paste button reads the device clipboard through `/api/clipboard` on
   Android, because Android WebViews deny the async clipboard API.
 - Job history persists in `jobs.json`; active jobs interrupted by a restart are
@@ -99,7 +99,7 @@ Verified on an Android 15 x86_64 emulator:
 - saving writes to `Downloads/Clipshed` (duplicate names become `(1)`);
 - a download completes while the app is backgrounded, then the service stops;
 - cancel leaves no service or temp files;
-- settings, cookie import, history persistence, and update checks work;
+- settings, history persistence, and update checks work;
 - the Paste button reads the clipboard and fills the URL field.
 
 Known Phase 1 limitations:
@@ -107,7 +107,8 @@ Known Phase 1 limitations:
 - Progress is coarse for `--download-sections` jobs (indeterminate, then 99–100%)
   because yt-dlp delegates the range fetch to ffmpeg. Other downloads use
   yt-dlp's own progress.
-- Only `cookies.txt` import is supported; browser-cookie reading is not.
+- Cookie-based sign-in is disabled for now and shown as “Coming soon”; public
+  videos work without it.
 - The release APK is signed with the Android debug key. Replace the release
   `signingConfig` with a real keystore before sharing it.
 - Tauri warns that `com.clipshed.app` ends in `.app`; this only matters for
@@ -236,8 +237,8 @@ The Windows Tauri shell (Phase 2) needs no additional toolchain.
   library's bundled yt-dlp was already stale in the Phase 0 spike and had to be
   updated before downloads worked. Update on first launch and keep the library
   current.
-- Android background execution, MediaStore, cookie import, and notifications are
-  real feature work, not shell polish.
+- Android background execution, MediaStore, cookie support (currently disabled),
+  and notifications are real feature work, not shell polish.
 - Two server implementations can drift. Keep API contract tests and compare
   responses between the Node and Kotlin servers.
 - The Windows Tauri app still ships a 95.5 MB Node sidecar. Phase 3 moves it to

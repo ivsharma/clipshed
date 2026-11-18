@@ -31,7 +31,7 @@ interface Rule {
 const RULES: Rule[] = [
   {
     code: "BOT_CHECK",
-    message: "The site is asking for a sign-in check. Add cookies in Settings, then try again.",
+    message: "The site is asking for a sign-in check. Cookie sign-in is coming soon; try again later or use a different network.",
     when: has("not a bot"),
   },
   {

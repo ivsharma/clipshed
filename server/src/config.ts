@@ -52,6 +52,8 @@ export const config = {
   jobTtlHours: numberFromEnv(process.env.JOB_TTL_HOURS, 24),
   maxVideoDurationSeconds: 6 * 60 * 60,
   probeCacheTtlMs: 10 * 60 * 1000,
+  /** Cookie-based access is temporarily disabled in the UI and yt-dlp args. */
+  cookiesEnabled: false,
 } as const;
 
 export async function ensureDirs(): Promise<void> {

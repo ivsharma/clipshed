@@ -37,6 +37,9 @@ const BROWSER_LABELS: Record<CookiesBrowser, string> = {
   vivaldi: "Vivaldi",
 };
 
+/** Cookie-based access is temporarily hidden while the workflow is finished. */
+const COOKIES_ENABLED = false;
+
 const THEMES: Array<{
   id: Theme;
   title: string;
@@ -83,7 +86,11 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
 
   useEffect(() => {
     if (!open || !settings) return;
-    setDraft(isAndroid && settings.cookiesMode === "browser" ? { ...settings, cookiesMode: "none" } : settings);
+    const nextMode =
+      !COOKIES_ENABLED || (isAndroid && settings.cookiesMode === "browser")
+        ? "none"
+        : settings.cookiesMode;
+    setDraft({ ...settings, cookiesMode: nextMode });
   }, [open, settings, isAndroid]);
 
   useEffect(() => {
@@ -213,29 +220,43 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
               <div>
                 <div className="mono-label">01 / Site access</div>
                 <p className="mt-1 max-w-sm text-[12px] leading-relaxed text-[var(--ink-mute)]">
-                  Cookies help with age-restricted, private, or login-required posts. They never leave this machine.
+                  Cookie-based sign-in is coming soon. Public videos work without cookies.
                 </p>
               </div>
-              <span className="badge shrink-0">{health?.cookiesConfigured ? "Configured" : "Optional"}</span>
+              <span className="badge shrink-0">
+                {COOKIES_ENABLED ? (health?.cookiesConfigured ? "Configured" : "Optional") : "Coming soon"}
+              </span>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
               {modes.map((mode) => {
                 const Icon = mode.icon;
                 const selected = draft.cookiesMode === mode.id;
+                const unavailable = !COOKIES_ENABLED && mode.id !== "none";
                 return (
                   <button
                     key={mode.id}
                     type="button"
+                    disabled={unavailable}
+                    aria-disabled={unavailable}
                     onClick={() => setDraft({ ...draft, cookiesMode: mode.id })}
                     className={cn(
                       "flex flex-col items-start gap-2 border p-3 text-left transition",
                       selected
                         ? "border-[var(--red)] bg-[var(--red-soft)]"
-                        : "border-[var(--line-strong)] bg-[var(--paper-raised)] hover:border-[var(--ink)]",
+                        : unavailable
+                          ? "cursor-not-allowed border-dashed border-[var(--line-strong)] bg-[var(--paper)] opacity-55 grayscale"
+                          : "border-[var(--line-strong)] bg-[var(--paper-raised)] hover:border-[var(--ink)]",
                     )}
                   >
-                    <Icon className={selected ? "h-4 w-4 text-[var(--red)]" : "h-4 w-4 text-[var(--ink-mute)]"} />
+                    <span className="flex w-full items-center justify-between gap-2">
+                      <Icon className={selected ? "h-4 w-4 text-[var(--red)]" : "h-4 w-4 text-[var(--ink-mute)]"} />
+                      {unavailable ? (
+                        <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--ink-mute)]">
+                          Soon
+                        </span>
+                      ) : null}
+                    </span>
                     <span>
                       <span className="block text-[12px] font-semibold text-[var(--ink)]">{mode.title}</span>
                       <span className="mt-0.5 block text-[11px] leading-relaxed text-[var(--ink-mute)]">{mode.description}</span>
@@ -245,7 +266,19 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
               })}
             </div>
 
-            {draft.cookiesMode === "file" ? (
+            {!COOKIES_ENABLED ? (
+              <div className="mt-3 border border-dashed border-[var(--line-strong)] bg-[var(--paper)] px-3 py-2.5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--ink-mute)]">
+                  Cookie sign-in · coming soon
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-[var(--ink-mute)]">
+                  Age-restricted, private, and login-required videos will need cookies later. Public videos work
+                  without them.
+                </p>
+              </div>
+            ) : null}
+
+            {COOKIES_ENABLED && draft.cookiesMode === "file" ? (
               <div className="mt-3">
                 {isAndroid ? (
                   <div>
@@ -290,7 +323,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
               </div>
             ) : null}
 
-            {draft.cookiesMode === "browser" ? (
+            {COOKIES_ENABLED && draft.cookiesMode === "browser" ? (
               <div className="mt-3">
                 <label className="block">
                   <span className="mono-label mb-1.5 block">Browser</span>
@@ -517,7 +550,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
             </div>
           ) : null}
 
-          {health?.cookiesConfigured ? (
+          {COOKIES_ENABLED && health?.cookiesConfigured ? (
             <div className="mt-4 flex items-center gap-2 font-mono text-[11px] text-[var(--green)]">
               <CheckCircle className="h-3.5 w-3.5" />
               Cookies are configured.

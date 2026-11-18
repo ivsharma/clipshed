@@ -11,7 +11,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Android app built with Tauri v2: the shared React UI runs against a local Ktor
   server and youtubedl-android, with on-device MP4, MP3, and Both downloads,
-  MediaStore saves, a foreground download service, cookies.txt import, job
+  MediaStore saves, a foreground download service, job
   history, update checks, and in-app yt-dlp updates.
 - Tauri v2 Windows app with the same React UI/API and a bundled Node sidecar:
   **97.6 MB** NSIS installer and **295.5 MB** installed, using the shared
@@ -25,6 +25,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   the file system.
 - Desktop builds now keep only the `en-US` Chromium locale, removing about 48 MB
   of unused locale packs (about 8 MB from the compressed artifacts).
+- Cookie-based sign-in is temporarily disabled and shown as “Coming soon” in
+  Settings. Existing cookie settings are ignored until it returns.
 
 ### Fixed
 

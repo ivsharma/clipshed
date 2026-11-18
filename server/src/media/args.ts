@@ -26,6 +26,8 @@ export interface DownloadPlan {
 }
 
 function cookieArgs(settings: Settings): string[] {
+  if (!config.cookiesEnabled) return [];
+
   if (settings.cookiesMode === "browser") {
     return ["--cookies-from-browser", settings.cookiesBrowser];
   }
