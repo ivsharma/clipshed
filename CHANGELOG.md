@@ -13,7 +13,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   server and youtubedl-android, with on-device MP4, MP3, and Both downloads,
   MediaStore saves, a foreground download service, cookies.txt import, job
   history, update checks, and in-app yt-dlp updates.
-- Tauri v2 desktop shell scaffold for the Windows migration.
+- Tauri v2 Windows app with the same React UI/API and a bundled Node sidecar:
+  **97.6 MB** NSIS installer and **295.5 MB** installed, using the shared
+  WebView2 runtime instead of bundling Chromium.
 
 ### Changed
 

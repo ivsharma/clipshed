@@ -1,6 +1,6 @@
 # Tauri v2 migration plan (Windows + Android)
 
-Status: Phase 1 complete for Android. Phase 2 (Windows Tauri shell) not started.
+Status: Phase 1 complete for Android. Phase 2 core complete for Windows. Phase 3 optional.
 
 ## Goal
 
@@ -141,17 +141,54 @@ src-tauri/gen/android/app/build/outputs/apk/x86_64/release/app-x86_64-release.ap
 With Developer Mode enabled, the normal `npx tauri android build --apk --target
 aarch64` path works without the wrapper script.
 
-### Phase 2: Windows Tauri shell
+### Phase 2: Windows Tauri shell — core complete
 
-- Tauri spawns the current Node server bundle as a sidecar.
-- Tauri loads the assigned loopback URL.
-- Reimplement download naming, save-to-Downloads, and completion notifications
-  in the shell.
-- Keep the current server and tests until parity is proven.
-- Retire Electron only after the Tauri app passes the same manual checks.
+Implemented:
 
-Expected install size: about 293 MB (Tauri + Node + ffmpeg/yt-dlp/QuickJS),
-versus 498 MB for the current Electron build.
+- The Rust setup starts a bundled Node sidecar (`node.exe` +
+  `server/sidecar.cjs`) with `CLIPSHED_ROOT`, `DATA_DIR`, `BIN_DIR`,
+  `FFMPEG_DIR`, `QJS_PATH`, and `WEB_DIST`.
+- The Tauri window is created after the server listens on `127.0.0.1:43123`
+  and loads the same React UI.
+- Bundled resources: `node.exe`, `server.cjs`, `sidecar.cjs`, the web build,
+  and `ffmpeg.exe`, `yt-dlp.exe`, and `qjs.exe`.
+- The managed yt-dlp copy lives in `%LOCALAPPDATA%\Clipshed\bin`; stale
+  ffmpeg/ffprobe/qjs copies are removed at startup.
+- The window is 1180×760 with `preventOverflow`, min 900×640.
+- `npm run tauri:windows:build` builds the web UI, server bundle, stages
+  `node.exe`, and produces an NSIS installer.
+- `scripts/stage-tauri-windows.mjs` handles the sidecar naming.
+- `tauri.windows.conf.json` keeps Windows-only resources and `externalBin`
+  out of the Android build.
+
+Measured:
+
+| Part | Installed |
+|---|---:|
+| Tauri shell (`app.exe`) | 11.4 MB |
+| `node.exe` sidecar | 95.5 MB |
+| `ffmpeg.exe` | 162.2 MB |
+| `yt-dlp.exe` | 22.5 MB |
+| QuickJS | 2.1 MB |
+| Server bundle, web UI, notices | ~2.4 MB |
+| **Total** | **295.5 MB** |
+| NSIS installer | **97.6 MB** |
+
+Verified:
+
+- dev and installed builds launch, the window loads the real UI, and health is
+  green;
+- a 10-second MP4 job completes through the Tauri-hosted Node server;
+- the file endpoint serves the finished MP4;
+- the installed app and Node sidecar shut down together.
+
+Remaining Phase 2 polish:
+
+- Downloads still use WebView2's default handling; unique naming and completion
+  notifications are not reimplemented yet.
+- There is no single-instance lock; a second launch can race on port 43123.
+- External-link/navigation guard is not implemented.
+- The NSIS installer is unsigned.
 
 ### Phase 3: optional Windows Rust backend
 
@@ -163,16 +200,19 @@ Android, because Android still needs Kotlin plus `youtubedl-android`.
 
 | Target | Size |
 |---|---:|
-| Current Windows (Electron, en-US locale) | 497.8 MB |
-| Windows Tauri + Node sidecar (planned) | ~293 MB |
-| Windows Tauri + Rust backend (optional) | ~200 MB |
-| Android arm64 release APK | **71.0 MB** |
-| Android x86_64 release APK | **74.0 MB** |
-| Android arm64 debug APK | 106.9 MB |
+| Windows Electron installed (en-US locale) | 497.8 MB |
+| Windows Electron installer | 178.6 MB |
+| **Windows Tauri installed** | **295.5 MB** |
+| **Windows Tauri NSIS installer** | **97.6 MB** |
+| Windows Tauri + Rust backend (Phase 3) | ~200 MB |
+| Android arm64 release APK | 71.0 MB |
+| Android x86_64 release APK | 74.0 MB |
+| Android arm64 debug APK | 107.8 MB |
 
 The shared WebView2 runtime is not included in the Windows number. It ships with
 Windows 11 and current Windows 10/Edge installs; a fixed-runtime bundle would add
-roughly 180 MB.
+roughly 180 MB. The Android APK includes its Python/ffmpeg/QuickJS payload but
+uses the system Android WebView.
 
 ## Toolchain
 
@@ -200,7 +240,11 @@ The Windows Tauri shell (Phase 2) needs no additional toolchain.
   real feature work, not shell polish.
 - Two server implementations can drift. Keep API contract tests and compare
   responses between the Node and Kotlin servers.
+- The Windows Tauri app still ships a 95.5 MB Node sidecar. Phase 3 moves it to
+  Rust and removes that runtime.
+- WebView2 downloads, unique file naming, notifications, and single-instance
+  handling still need polish before Electron can be retired.
 - Range-download progress is coarse on Android because ffmpeg performs the cut;
   improving it needs a separate progress parser.
-- The release APK must be re-signed with a real keystore before distribution.
-- Windows Tauri + Node still ships Node. Only the Phase 3 Rust port removes it.
+- The Android release APK and the Windows NSIS installer are currently signed
+  with test/debug material. Use real signing keys before distribution.

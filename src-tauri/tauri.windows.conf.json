@@ -1,0 +1,38 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Clipshed",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 900,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "preventOverflow": true,
+        "url": "http://127.0.0.1:43123",
+        "create": false,
+        "visible": false
+      }
+    ]
+  },
+  "bundle": {
+    "targets": [
+      "nsis"
+    ],
+    "externalBin": [
+      "binaries/node"
+    ],
+    "resources": {
+      "../desktop/build/server.cjs": "server/server.cjs",
+      "../desktop/sidecar.cjs": "server/sidecar.cjs",
+      "../web/dist/": "web/",
+      "../bin/ffmpeg.exe": "bin/ffmpeg.exe",
+      "../bin/yt-dlp.exe": "bin/yt-dlp.exe",
+      "../bin/qjs.exe": "bin/qjs.exe"
+    }
+  }
+}

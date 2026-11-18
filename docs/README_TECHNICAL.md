@@ -377,7 +377,9 @@ data and the managed yt-dlp copy. It is “no-install”, not fully portable.
 
 ### Package size
 
-The installation directory is about **498 MB**:
+Two Windows bundles are available.
+
+**Electron build (fallback):** about **498 MB** installed.
 
 | Part | Approx. size |
 |---|---:|
@@ -389,30 +391,44 @@ The installation directory is about **498 MB**:
 
 Desktop builds keep only the `en-US` Chromium locale, which saves about 48 MB
 of unused locale packs. The compressed artifacts are about **179 MB** for the
-installer and **165 MB** for the portable EXE. After first launch,
-`%LOCALAPPDATA%\Clipshed` adds only the managed yt-dlp copy (~23 MB) plus history
-and downloads, not a second copy of ffmpeg or QuickJS.
+installer and **165 MB** for the portable EXE.
 
-Possible reductions, roughly in order of effort versus payoff:
+**Tauri build (Phase 2):** about **295.5 MB** installed, with a **97.6 MB** NSIS
+installer.
+
+| Part | Approx. size |
+|---|---:|
+| Tauri shell (`app.exe`) | 11.4 MB |
+| Bundled `node.exe` sidecar | 95.5 MB |
+| `ffmpeg.exe` | 162.2 MB |
+| `yt-dlp.exe` | 22.5 MB |
+| QuickJS | 2.1 MB |
+| Server bundle, web UI, notices | 2.4 MB |
+
+Tauri uses the shared WebView2 runtime instead of bundling Chromium. WebView2 is
+not included in this number; it ships with Windows 11 and current Windows 10/Edge
+installs. A fixed-runtime bundle would add roughly 180 MB.
+
+After first launch, `%LOCALAPPDATA%\Clipshed` adds only the managed yt-dlp copy
+(~23 MB) plus history and downloads, not a second copy of ffmpeg or QuickJS.
+
+Possible reductions for the Tauri build, roughly in order of effort versus
+payoff:
 
 | Option | Approx. installed saving | Approx. artifact saving | Tradeoff |
 |---|---:|---:|---|
-| Remove `dxcompiler.dll` and SwiftShader/Vulkan fallbacks | ~31 MB | ~10 MB | No WebGPU; must test GPU-less machines |
+| Port the Node server to Rust and remove the sidecar | ~95 MB | ~30–40 MB | Largest effort; keeps the same HTTP API |
 | Use a shared ffmpeg build (one set of DLLs) | ~100–160 MB | ~30–50 MB | More files; adjust setup paths and packaging |
-| Set `compression: maximum` in `electron-builder.yml` | 0 | ~20–30 MB | Slower builds |
-| Replace Electron with a Tauri/WebView2 shell plus a Node sidecar | ~210 MB | ~55–70 MB | Rewrite the desktop shell; depends on the system WebView2 runtime |
-| Drop the embedded browser and launch the UI in the default browser | ~210 MB | ~55–70 MB | No native window, download handling, or menu |
-| Rewrite the server too (Go/Rust) and keep WebView2 | ~295 MB | ~90–110 MB | Largest effort; ffmpeg remains the biggest component |
-| Download binaries on first run instead of bundling | ~190 MB | ~100 MB+ | Requires network, hosting, checksums; not self-contained |
+| Enable stronger NSIS compression | 0 | ~10–20 MB | Slower builds |
+| Download binaries on first run instead of bundling | ~190 MB | ~80–100 MB | Requires network, hosting, checksums; not self-contained |
 | Custom minimal ffmpeg build | ~100–150 MB | Large | Build and maintenance burden |
 
-The best effort-to-payoff order is: switch to a shared ffmpeg build, then enable
-maximum compression, then consider a non-Electron shell. Those changes should
-bring the installed payload into roughly the **340–400 MB** range while keeping
-the app fully offline. Removing `ffprobe` already cut about 162 MB from the
-install and about 48 MB from the installer and 44 MB from the portable EXE;
-keeping only the `en-US` locale cut another 48 MB. Size and checksum claims
-should be re-measured after any further packaging changes.
+The best effort-to-payoff order is: switch to a shared ffmpeg build, then port
+the Node server to Rust. Those changes should bring the installed payload into
+roughly the **40–100 MB** range while keeping the app fully offline; ffmpeg
+remains the largest component. Removing `ffprobe` already cut about 162 MB from
+the Electron install; keeping only the `en-US` locale cut another 48 MB. Size
+and checksum claims should be re-measured after any further packaging changes.
 
 ## Settings
 

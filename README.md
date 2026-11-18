@@ -79,6 +79,26 @@ Builds are currently unsigned, so Windows SmartScreen may warn on first launch.
 The installer is large because it includes Electron, ffmpeg, yt-dlp, and
 QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
 
+### Tauri Windows build
+
+The Tauri build uses the shared WebView2 runtime and a bundled Node sidecar. It
+runs the same React UI and API and shares `%LOCALAPPDATA%\Clipshed` data with the
+Electron app.
+
+```powershell
+npm run tauri:windows:build
+```
+
+Output:
+
+```text
+src-tauri\target\release\bundle\nsis\Clipshed_1.1.0_x64-setup.exe
+```
+
+Measured: **97.6 MB installer**, **295.5 MB installed**. Electron remains
+available through `desktop:dist` while Tauri download/notification polish is
+finished.
+
 ## Android app
 
 The Android app uses the same React UI and downloads on-device through a Kotlin
