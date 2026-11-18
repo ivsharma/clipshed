@@ -6,7 +6,7 @@ remain under their own licenses; the Clipshed MIT license does not replace them.
 | Component | Version / source | License |
 |---|---|---|
 | **yt-dlp** | https://github.com/yt-dlp/yt-dlp | Unlicense |
-| **FFmpeg / ffprobe** | https://github.com/yt-dlp/FFmpeg-Builds (GPL win64 build) | GPLv3 |
+| **FFmpeg** | https://github.com/yt-dlp/FFmpeg-Builds (GPL win64 build) | GPLv3 |
 | **QuickJS-ng** | https://github.com/quickjs-ng/quickjs | MIT |
 | **Electron / Chromium** | https://www.electronjs.org | MIT / BSD-style and third-party notices included by Electron |
 

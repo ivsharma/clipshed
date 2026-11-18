@@ -36,7 +36,7 @@ async function getVersions(): Promise<Versions> {
 }
 
 export function binariesExist(): boolean {
-  return [config.ytdlpPath, config.ffmpegPath, config.ffprobePath].every((file) => existsSync(file));
+  return [config.ytdlpPath, config.ffmpegPath].every((file) => existsSync(file));
 }
 
 export function assertBinaries(): void {

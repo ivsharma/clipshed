@@ -42,7 +42,6 @@ export const config = {
     : path.join(binDir, isWindows ? "yt-dlp.exe" : "yt-dlp"),
   ffmpegDir,
   ffmpegPath: path.join(ffmpegDir, isWindows ? "ffmpeg.exe" : "ffmpeg"),
-  ffprobePath: path.join(ffmpegDir, isWindows ? "ffprobe.exe" : "ffprobe"),
   qjsPath: process.env.QJS_PATH
     ? resolveFromRoot(process.env.QJS_PATH, `bin/${isWindows ? "qjs.exe" : "qjs"}`)
     : path.join(binDir, isWindows ? "qjs.exe" : "qjs"),

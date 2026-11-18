@@ -42,7 +42,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**.
 
-`npm run setup` downloads the standalone `yt-dlp.exe`, static `ffmpeg`/`ffprobe` builds, and QuickJS into `bin/`. No Python install is required.
+`npm run setup` downloads the standalone `yt-dlp.exe`, a static `ffmpeg` build, and QuickJS into `bin/`. No Python install is required.
 
 Production-style run:
 
@@ -71,13 +71,13 @@ npm run desktop:dist   # installer + portable exe in release/
 - `Clipshed-<version>-portable.exe` — no-install portable build
 
 The desktop app stores settings, history, downloads, and a managed yt-dlp copy in
-`%LOCALAPPDATA%\Clipshed` (development builds use `Clipshed Dev`). ffmpeg, ffprobe,
-and QuickJS run from the bundled resources. It starts the local API on a random
+`%LOCALAPPDATA%\Clipshed` (development builds use `Clipshed Dev`). ffmpeg and
+QuickJS run from the bundled resources. It starts the local API on a random
 loopback port and opens the real UI in an Electron window.
 
 Builds are currently unsigned, so Windows SmartScreen may warn on first launch.
-The installer is large because it includes Electron, ffmpeg, ffprobe, yt-dlp,
-and QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
+The installer is large because it includes Electron, ffmpeg, yt-dlp, and
+QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
 
 ## Configuration
 

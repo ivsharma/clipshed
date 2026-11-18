@@ -7,6 +7,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Removed the bundled `ffprobe` binary, trimming about 162 MB from desktop
+  installs and about 45 MB from the installer and portable EXE. The finished
+  file's duration is now read from ffmpeg's input banner, and its size comes from
+  the file system.
+- Desktop builds now keep only the `en-US` Chromium locale, removing about 48 MB
+  of unused locale packs (about 8 MB from the compressed artifacts).
+
 ## [1.1.0] - 2026-11-16
 
 ### Added

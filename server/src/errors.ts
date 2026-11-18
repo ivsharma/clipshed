@@ -127,10 +127,9 @@ const RULES: Rule[] = [
   },
   {
     code: "FFMPEG_MISSING",
-    message: "ffmpeg isn't available. Run the setup script again so ffmpeg and ffprobe are in the bin folder.",
+    message: "ffmpeg isn't available. Run the setup script again so ffmpeg is in the bin folder.",
     when: (text) =>
-      (text.includes("ffmpeg") && (text.includes("not found") || text.includes("not installed"))) ||
-      (text.includes("ffprobe") && text.includes("not found")),
+      text.includes("ffmpeg") && (text.includes("not found") || text.includes("not installed")),
   },
   {
     code: "DISK_FULL",

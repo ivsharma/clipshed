@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 
-const required = ["bin/yt-dlp.exe", "bin/ffmpeg.exe", "bin/ffprobe.exe", "bin/qjs.exe"];
+const required = ["bin/yt-dlp.exe", "bin/ffmpeg.exe", "bin/qjs.exe"];
 const missing = required.filter((file) => !existsSync(file));
 
 if (missing.length) {

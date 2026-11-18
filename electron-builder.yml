@@ -17,7 +17,6 @@ extraResources:
     filter:
       - yt-dlp.exe
       - ffmpeg.exe
-      - ffprobe.exe
       - qjs.exe
   - from: desktop/resources/icon.ico
     to: icon.ico
@@ -26,6 +25,9 @@ extraResources:
   - from: desktop/resources/THIRD_PARTY_NOTICES.md
     to: THIRD_PARTY_NOTICES.md
 asar: true
+# The UI is English-only, so drop the other 54 Chromium locale packs (~48 MB).
+electronLanguages:
+  - en-US
 compression: normal
 npmRebuild: false
 win:

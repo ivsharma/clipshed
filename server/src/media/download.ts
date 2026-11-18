@@ -77,30 +77,32 @@ async function moveFile(source: string, destination: string): Promise<void> {
   }
 }
 
+const DURATION_PATTERN = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/;
+
+/**
+ * Reads a finished file's duration from ffmpeg's input banner. ffmpeg prints the
+ * stream summary to stderr and exits with an error because no output was given,
+ * so only the parsed value matters.
+ */
+async function readDuration(file: string): Promise<number | null> {
+  const probe = await runCommand(config.ffmpegPath, ["-hide_banner", "-i", file], {
+    timeoutMs: 30_000,
+  }).catch(() => null);
+
+  const match = probe ? DURATION_PATTERN.exec(probe.stderr) : null;
+  if (!match) return null;
+  const [, hours, minutes, seconds] = match;
+  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+}
+
 async function describeFile(
   file: string,
   filename: string,
   mime: string,
+  duration?: number | null,
 ): Promise<DownloadedFile> {
   const stat = await fs.stat(file);
-  const probe = await runCommand(
-    config.ffprobePath,
-    ["-v", "error", "-show_entries", "format=duration,size", "-of", "json", file],
-    { timeoutMs: 30_000 },
-  ).catch(() => null);
-
-  let duration: number | null = null;
-  let size = stat.size;
-  if (probe?.code === 0) {
-    try {
-      const format = (JSON.parse(probe.stdout) as { format?: { duration?: string; size?: string } }).format;
-      duration = format?.duration ? Number(format.duration) : null;
-      size = format?.size ? Number(format.size) : size;
-    } catch {
-      // Keep the file-system values if ffprobe output is unreadable.
-    }
-  }
-  return { filename, size, duration, mime };
+  return { filename, size: stat.size, duration: duration ?? (await readDuration(file)), mime };
 }
 
 /** Converts a downloaded video to MP3, used by "Both" so the range is fetched only once. */
@@ -189,27 +191,29 @@ export async function startDownload(
     }
 
     const videoName = `${task.base}.${videoExt}`;
-    let audio: DownloadedFile | null = null;
+    const videoPath = path.join(outDir, videoName);
+    const mp3Name = `${task.base}.mp3`;
 
     if (task.kind === "both") {
       tracker.setStage("converting");
       tracker.indeterminate("Extracting MP3 from the downloaded section");
-      const mp3Temp = path.join(tempDir, `${task.base}.mp3`);
+      const mp3Temp = path.join(tempDir, mp3Name);
       await extractMp3(source, mp3Temp, task.bitrate ?? 192, (ffmpeg) => (activeChild = ffmpeg));
       activeChild = child;
       if (cancelled) throw new Cancelled();
 
-      await moveFile(mp3Temp, path.join(outDir, `${task.base}.mp3`));
-      audio = await describeFile(path.join(outDir, `${task.base}.mp3`), `${task.base}.mp3`, "audio/mpeg");
+      await moveFile(mp3Temp, path.join(outDir, mp3Name));
     }
 
     if (cancelled) throw new Cancelled();
-    await moveFile(source, path.join(outDir, videoName));
-    const video = await describeFile(
-      path.join(outDir, videoName),
-      videoName,
-      isMp3 ? "audio/mpeg" : "video/mp4",
-    );
+    await moveFile(source, videoPath);
+    const video = await describeFile(videoPath, videoName, isMp3 ? "audio/mpeg" : "video/mp4");
+
+    // The MP3 is extracted from the MP4, so both files share one duration read.
+    const audio =
+      task.kind === "both"
+        ? await describeFile(path.join(outDir, mp3Name), mp3Name, "audio/mpeg", video.duration)
+        : null;
 
     await removeDir(tempDir);
     return { cancelled: false, video, audio };

@@ -52,7 +52,7 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 - Light, Dark, and Dark contrast themes, remembered per device
 - Check for updates against GitHub Releases
 - Update yt-dlp from the settings dialog
-- **Windows desktop app** — Electron build with yt-dlp, ffmpeg/ffprobe, and QuickJS bundled; no Node install needed at runtime
+- **Windows desktop app** — Electron build with yt-dlp, ffmpeg, and QuickJS bundled; no Node install needed at runtime
 - Local-only; no account, no cloud, no telemetry
 
 ## How the range download works
@@ -102,7 +102,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**.
 
-`npm run setup` downloads the standalone `yt-dlp.exe`, static `ffmpeg`/`ffprobe` builds, and QuickJS into `bin/`. No Python install is required.
+`npm run setup` downloads the standalone `yt-dlp.exe`, a static `ffmpeg` build, and QuickJS into `bin/`. No Python install is required.
 
 ### Production-style run
 
@@ -135,14 +135,14 @@ npm run desktop:dist   # NSIS installer + portable exe in release/
 Packaged data lives in `%LOCALAPPDATA%\Clipshed`; development runs use
 `%LOCALAPPDATA%\Clipshed Dev`. On first launch, a managed copy of `yt-dlp.exe` is
 placed in the writable app home so the in-app yt-dlp update can replace it.
-ffmpeg, ffprobe, and QuickJS run from the bundled resources. The portable build
+ffmpeg and QuickJS run from the bundled resources. The portable build
 also uses this location, so it is no-install rather than fully portable.
 
 `desktop:dist` builds `Clipshed-Setup-<version>.exe` and
 `Clipshed-<version>-portable.exe`. Builds are unsigned unless a Windows
 code-signing certificate is configured in `electron-builder.yml`.
 
-The desktop bundle includes yt-dlp, ffmpeg/ffprobe, QuickJS, and the third-party
+The desktop bundle includes yt-dlp, ffmpeg, QuickJS, and the third-party
 notices. QuickJS is used because packaged users do not necessarily have Node on
 `PATH`; yt-dlp needs a JavaScript runtime for some YouTube challenges. See
 [THIRD_PARTY_NOTICES.md](../desktop/resources/THIRD_PARTY_NOTICES.md).
@@ -157,7 +157,7 @@ flowchart LR
   UI["React + Vite UI"] -->|REST + SSE| API["Express API"]
   API --> Q["Job queue"]
   Q --> YT["yt-dlp"]
-  YT --> FF["ffmpeg / ffprobe"]
+  YT --> FF["ffmpeg"]
   FF --> OUT["data/downloads"]
   API --> DATA["data/jobs.json"]
 ```
@@ -179,7 +179,7 @@ flowchart LR
 | UI | React 19, Vite 8, TypeScript, Tailwind CSS 4 |
 | API | Node 24, Express 5, Zod |
 | Download engine | yt-dlp (standalone) |
-| Media | ffmpeg + ffprobe |
+| Media | ffmpeg |
 | Desktop | Electron 45 + electron-builder |
 | Server bundle | esbuild |
 | yt-dlp JS runtime | QuickJS-ng (bundled), Node in development |
@@ -200,8 +200,8 @@ or `npm run dev`.
    existing window and exits.
 3. It creates the app-home and Electron user-data directories.
 4. It stages a missing `yt-dlp.exe` in `%LOCALAPPDATA%\Clipshed\bin` and removes
-   obsolete ffmpeg/ffprobe/QuickJS copies staged by older builds. ffmpeg,
-   ffprobe, and QuickJS stay in the bundled `resources\bin`.
+   obsolete ffmpeg/ffprobe/QuickJS copies staged by older builds. ffmpeg and
+   QuickJS stay in the bundled `resources\bin`.
 5. It sets the desktop environment variables, loads the compiled server bundle,
    and calls `startLocalServer({ host: "127.0.0.1", port: 0 })`.
 6. The server starts the job manager, serves the API and built UI, and returns the
@@ -237,7 +237,7 @@ leaving a blank window.
 | Path | Purpose |
 |---|---|
 | `%LOCALAPPDATA%\Clipshed\bin` | Managed, writable copy of yt-dlp |
-| `resources\bin` | Bundled ffmpeg, ffprobe, QuickJS, and the original yt-dlp |
+| `resources\bin` | Bundled ffmpeg, QuickJS, and the original yt-dlp |
 | `%LOCALAPPDATA%\Clipshed\data\jobs.json` | Job history |
 | `%LOCALAPPDATA%\Clipshed\data\downloads` | Completed files served to the browser |
 | `%LOCALAPPDATA%\Clipshed\data\tmp` | In-progress download files |
@@ -246,7 +246,7 @@ leaving a blank window.
 
 Only yt-dlp is copied out of the installation because it is the only bundled tool
 that updates itself. `yt-dlp -U` needs a writable location, and the app runs as a
-normal user without elevation. ffmpeg, ffprobe, and QuickJS execute directly from
+normal user without elevation. ffmpeg and QuickJS execute directly from
 `resources\bin`.
 
 The managed yt-dlp copy is deliberately “missing only”: an existing copy is never
@@ -333,7 +333,7 @@ self-contained. QuickJS is MIT-licensed; see
 - **yt-dlp:** Settings → **Update yt-dlp** runs `yt-dlp -U` against the managed
   copy in `%LOCALAPPDATA%\Clipshed\bin`. It works in both the installer and
   portable builds without an admin prompt.
-- **ffmpeg / ffprobe / QuickJS:** these run from the bundled resources; install a
+- **ffmpeg / QuickJS:** these run from the bundled resources; install a
   new Clipshed build to change them.
 - **Clipshed itself:** there is no app auto-updater yet. `electron-builder`
   generates `latest.yml` and `app-update.yml`, but no client code uses them.
@@ -361,11 +361,11 @@ Packaged resource map:
 | `desktop/main.cjs`, `package.json` | `resources\app.asar` |
 | `desktop/build/server.cjs` | `resources\server\server.cjs` |
 | `web/dist` | `resources\web\dist` |
-| `bin/yt-dlp.exe`, `ffmpeg.exe`, `ffprobe.exe`, `qjs.exe` | `resources\bin` |
+| `bin/yt-dlp.exe`, `ffmpeg.exe`, `qjs.exe` | `resources\bin` |
 | `desktop/resources/icon.ico` | `resources\icon.ico` |
 | `LICENSE`, third-party notices | `resources\` |
 
-`desktop:verify` checks that all four binaries exist before packaging.
+`desktop:verify` checks that all three binaries exist before packaging.
 `desktop:check` syntax-checks the Electron main file and build scripts and runs
 in CI. Packaging itself is local because CI does not carry the ignored binaries
 or download the Electron binary.
@@ -377,40 +377,42 @@ data and the managed yt-dlp copy. It is “no-install”, not fully portable.
 
 ### Package size
 
-The installation directory is about **708 MB**:
+The installation directory is about **498 MB**:
 
 | Part | Approx. size |
 |---|---:|
-| Electron/Chromium runtime and support files | 357 MB |
+| Electron/Chromium runtime and support files | 309 MB |
 | `ffmpeg.exe` | 162 MB |
-| `ffprobe.exe` | 162 MB |
 | `yt-dlp.exe` | 23 MB |
 | QuickJS | 2 MB |
 | App, server bundle, UI, notices | 2.4 MB |
 
-The compressed artifacts are about **235 MB** for the installer and **217 MB**
-for the portable EXE. After first launch, `%LOCALAPPDATA%\Clipshed` adds only
-the managed yt-dlp copy (~23 MB) plus history and downloads, not a second copy of
-ffmpeg, ffprobe, or QuickJS.
+Desktop builds keep only the `en-US` Chromium locale, which saves about 48 MB
+of unused locale packs. The compressed artifacts are about **179 MB** for the
+installer and **165 MB** for the portable EXE. After first launch,
+`%LOCALAPPDATA%\Clipshed` adds only the managed yt-dlp copy (~23 MB) plus history
+and downloads, not a second copy of ffmpeg or QuickJS.
 
 Possible reductions, roughly in order of effort versus payoff:
 
 | Option | Approx. installed saving | Approx. artifact saving | Tradeoff |
 |---|---:|---:|---|
-| Remove `ffprobe`; derive duration from ffmpeg or job metadata | ~162 MB | ~35–50 MB | Rewrite the post-download metadata step |
+| Remove `dxcompiler.dll` and SwiftShader/Vulkan fallbacks | ~31 MB | ~10 MB | No WebGPU; must test GPU-less machines |
 | Use a shared ffmpeg build (one set of DLLs) | ~100–160 MB | ~30–50 MB | More files; adjust setup paths and packaging |
 | Set `compression: maximum` in `electron-builder.yml` | 0 | ~20–30 MB | Slower builds |
-| Drop unused Electron locales and SwiftShader/Vulkan files | ~15–30 MB | ~5–10 MB | Must test GPU fallback |
-| Download binaries on first run instead of bundling | ~300 MB initial install | ~170 MB+ | Requires network, hosting, checksums; not self-contained |
-| Tauri/WebView2 shell plus a Node sidecar | ~200 MB+ | Large | Rewrites the shell; still needs a Node runtime |
-| Custom minimal ffmpeg build | ~250 MB+ | Large | Build and maintenance burden |
+| Replace Electron with a Tauri/WebView2 shell plus a Node sidecar | ~210 MB | ~55–70 MB | Rewrite the desktop shell; depends on the system WebView2 runtime |
+| Drop the embedded browser and launch the UI in the default browser | ~210 MB | ~55–70 MB | No native window, download handling, or menu |
+| Rewrite the server too (Go/Rust) and keep WebView2 | ~295 MB | ~90–110 MB | Largest effort; ffmpeg remains the biggest component |
+| Download binaries on first run instead of bundling | ~190 MB | ~100 MB+ | Requires network, hosting, checksums; not self-contained |
+| Custom minimal ffmpeg build | ~100–150 MB | Large | Build and maintenance burden |
 
-The best effort-to-payoff order is: remove `ffprobe`, switch to a shared ffmpeg
-build, then enable maximum compression. Those changes should bring the installed
-payload into roughly the **380–450 MB** range while keeping the app fully
-offline. `ffprobe` is the single biggest easy win because the code only uses it
-for the finished file's duration and size. Size and checksum claims will need to
-be re-measured after any of these changes.
+The best effort-to-payoff order is: switch to a shared ffmpeg build, then enable
+maximum compression, then consider a non-Electron shell. Those changes should
+bring the installed payload into roughly the **340–400 MB** range while keeping
+the app fully offline. Removing `ffprobe` already cut about 162 MB from the
+install and about 48 MB from the installer and 44 MB from the portable EXE;
+keeping only the `en-US` locale cut another 48 MB. Size and checksum claims
+should be re-measured after any further packaging changes.
 
 ## Settings
 
@@ -467,7 +469,7 @@ clipshed/
     build/server.cjs      Generated server bundle (gitignored)
     resources/            Icon, icon source, third-party notices
   scripts/
-    setup-binaries.ps1    Downloads yt-dlp, ffmpeg, ffprobe, QuickJS
+    setup-binaries.ps1    Downloads yt-dlp, ffmpeg, QuickJS
     build-desktop.mjs     Bundles the server for Electron with esbuild
     check-desktop.mjs     Verifies binaries before packaging
     check-version.mjs     Verifies package and lockfile version consistency
@@ -495,7 +497,7 @@ yt-dlp already supports hundreds of sites, so the download path itself usually n
 
 | Command | What it does |
 |---|---|
-| `npm run setup` | Download yt-dlp, ffmpeg, ffprobe, QuickJS |
+| `npm run setup` | Download yt-dlp, ffmpeg, QuickJS |
 | `npm run dev` | Vite on :5173 + API on :3000 |
 | `npm run build` | Type-check and build the frontend |
 | `npm start` | Serve the built app + API on :3000 |
@@ -603,8 +605,8 @@ Open Settings and add cookies from a signed-in browser (or a `cookies.txt` file)
 The selected quality disappeared or is region/account-specific. Pick another quality or update yt-dlp.
 
 **ffmpeg is missing**  
-Run `npm run setup` again. The app expects `bin/ffmpeg.exe`, `bin/ffprobe.exe`, and
-(for packaged YouTube support) `bin/qjs.exe`.
+Run `npm run setup` again. The app expects `bin/ffmpeg.exe` and (for packaged
+YouTube support) `bin/qjs.exe`.
 
 **Windows says the desktop app is unsafe**<br>
 The build is currently unsigned. SmartScreen can warn on first launch of an
@@ -613,7 +615,7 @@ Windows code-signing certificate before distributing it widely.
 
 **The desktop build says binaries are missing**<br>
 Run `npm run setup` before `npm run desktop:dist`. The installer bundles the
-four binaries from `bin/`.
+three binaries from `bin/`.
 
 **The desktop app shows old downloads or settings after switching builds**<br>
 The installer, portable EXE, and source desktop run share
@@ -633,7 +635,7 @@ Close active downloads first; Windows can lock a running executable. Make sure
 runs as your normal user and does not need administrator rights.
 
 **The desktop EXE is much larger than expected**<br>
-The package includes Electron, ffmpeg, ffprobe, yt-dlp, and QuickJS. See
+The package includes Electron, ffmpeg, yt-dlp, and QuickJS. See
 [Package size](#package-size) for the breakdown and reduction options.
 
 **Cookies from Chrome fail**  
@@ -660,7 +662,7 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 - Desktop builds are Windows x64 only, unsigned, and have no automatic app
   updater. Only yt-dlp updates itself from Settings.
 - The installer and portable build are large because Electron and
-  ffmpeg/ffprobe are bundled. See [Package size](#package-size).
+  ffmpeg are bundled. See [Package size](#package-size).
 - Files are cleaned up after `JOB_TTL_HOURS` (default 24 hours).
 - Job history is a local JSON file, capped at 100 entries.
 - Re-encoding is intentionally not exposed as a “compress” mode yet. Choosing a lower source resolution is the better size/quality tradeoff.

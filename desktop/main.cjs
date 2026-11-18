@@ -103,8 +103,9 @@ async function stageManagedBinaries() {
     await fsp.copyFile(ytdlpSource, ytdlpDestination);
   }
 
-  // Older builds staged every binary here. ffmpeg, ffprobe, and QuickJS are
-  // read-only resources now; only yt-dlp needs a managed, writable copy.
+  // Older builds staged every binary here. ffmpeg and QuickJS are read-only
+  // resources now; only yt-dlp needs a managed, writable copy. ffprobe is no
+  // longer bundled, so any copy from an older build is removed too.
   for (const name of ["ffmpeg.exe", "ffprobe.exe", "qjs.exe"]) {
     await fsp.rm(path.join(binDir, name), { force: true }).catch(() => undefined);
   }
