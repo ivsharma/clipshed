@@ -39,11 +39,18 @@ function readCookie(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+interface AndroidInsetsBridge {
+  setDarkTheme?: (dark: boolean) => void;
+}
+
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
+
+  const bridge = (window as Window & { ClipshedInsets?: AndroidInsetsBridge }).ClipshedInsets;
+  bridge?.setDarkTheme?.(theme !== "light");
 }
 
 export function persistTheme(theme: Theme): void {

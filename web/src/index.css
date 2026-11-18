@@ -9,6 +9,12 @@
 :root {
   color-scheme: light;
 
+  /* Injected by the Android shell; env() is the fallback on platforms that report it. */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+
   --paper: #f1eee6;
   --paper-raised: #fbf9f3;
   --input: #fffdf8;
@@ -126,11 +132,16 @@
 
 html {
   scroll-behavior: smooth;
+  background-color: var(--paper);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  padding-top: var(--safe-area-inset-top);
+  padding-right: var(--safe-area-inset-right);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
   color: var(--ink);
   font-family: var(--font-sans);
   background-color: var(--paper);
@@ -138,6 +149,48 @@ body {
   background-size: 18px 18px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/*
+ * Keep scrolling content from showing between the status/navigation bar icons.
+ * The body padding positions the content; these fixed masks hide it once it
+ * scrolls underneath.
+ */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  height: var(--safe-area-inset-top);
+  background: var(--paper);
+  pointer-events: none;
+}
+
+body::before {
+  top: 0;
+}
+
+body::after {
+  bottom: 0;
+  height: var(--safe-area-inset-bottom);
+}
+
+/* The settings sheet is viewport-fixed, so it needs the insets directly. */
+.settings-overlay {
+  padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+}
+
+@media (min-width: 640px) {
+  .settings-overlay {
+    padding: max(1rem, var(--safe-area-inset-top)) max(1rem, var(--safe-area-inset-right)) max(1rem, var(--safe-area-inset-bottom)) max(1rem, var(--safe-area-inset-left));
+  }
+}
+
+.toast-safe {
+  bottom: calc(1.25rem + var(--safe-area-inset-bottom));
+  right: calc(1.25rem + var(--safe-area-inset-right));
 }
 
 #root {

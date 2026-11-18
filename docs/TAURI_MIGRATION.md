@@ -1,6 +1,6 @@
 # Tauri v2 migration plan (Windows + Android)
 
-Status: Phase 1 complete for Android. Phase 2 core complete for Windows. Phase 3 optional.
+Status: Phase 1 complete for Android. Phase 2 complete for Windows. Phase 3 optional.
 
 ## Goal
 
@@ -83,6 +83,9 @@ Implemented in `src-tauri`. The Android server lives under
   marked “Coming soon”. Existing cookie settings are ignored.
 - The Paste button reads the device clipboard through `/api/clipboard` on
   Android, because Android WebViews deny the async clipboard API.
+- Edge-to-edge insets are reported to the UI as `--safe-area-inset-*` CSS
+  variables, with fixed masks that keep scrolled content out of the status and
+  navigation bars. Status-bar icon contrast follows the selected app theme.
 - Job history persists in `jobs.json`; active jobs interrupted by a restart are
   marked failed.
 - Launcher icons are generated from `desktop/resources/icon.svg` with
@@ -100,7 +103,11 @@ Verified on an Android 15 x86_64 emulator:
 - a download completes while the app is backgrounded, then the service stops;
 - cancel leaves no service or temp files;
 - settings, history persistence, and update checks work;
-- the Paste button reads the clipboard and fills the URL field.
+- the Paste button reads the clipboard and fills the URL field;
+- content stays below the status bar and above the navigation bar at the top
+  and while scrolling, in both light and dark themes;
+- the settings sheet respects the same insets, and status-bar icons switch
+  between dark and light with the app theme.
 
 Known Phase 1 limitations:
 

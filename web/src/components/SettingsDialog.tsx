@@ -191,7 +191,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay)] p-0 sm:items-center sm:p-4"
+      className="settings-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay)] sm:items-center"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
