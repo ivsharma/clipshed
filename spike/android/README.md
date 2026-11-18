@@ -15,6 +15,26 @@ engine before we invest in the mobile shell.
 It is deliberately a throwaway app: one activity, one executor, no persistence,
 no foreground service, and no local HTTP API yet.
 
+## Results
+
+Verified on an Android 15 x86_64 emulator (18 Nov 2026):
+
+- **Probe:** title, 635 s duration, 39 formats, heights `2160,1440,1080,720,480,360,240,180,144,90`.
+- **QuickJS:** `JS runtimes: quickjs-2025-04-26`; `[jsc:quickjs] Solving JS challenges`; no JavaScript-runtime or nsig errors.
+- **MP4:** 10.00 s, 1280×720 H.264 + AAC, 2.7 MB, published to `Downloads/ClipshedSpike`.
+- **MP3:** 10.02 s, 192 kbps stereo, 236 KB, published to the same folder.
+- **APK:** 57.2 MB arm64, 60.1 MB x86_64.
+
+### Important: update yt-dlp first
+
+The yt-dlp bundled with `youtubedl-android` 0.18.1 is **2025.11.12**. The first
+MP4 attempt failed with `HTTP 403 Forbidden` / SABR errors. After
+`updateYoutubeDL(STABLE)` installed **2026.10.26**, both MP4 and MP3 worked.
+
+The real Android app must update yt-dlp on first launch (and expose the update
+action in Settings). Do not ship relying only on the version bundled in the
+library.
+
 ## Build
 
 Prerequisites:

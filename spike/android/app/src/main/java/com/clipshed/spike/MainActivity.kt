@@ -132,6 +132,22 @@ class MainActivity : Activity() {
         addButton("Both") { runTask("Both") { download("mp4"); download("mp3") } }
         root.addView(row, matchWidth())
 
+        val updateButton = Button(this).apply {
+            text = "Update yt-dlp"
+            isAllCaps = false
+            setOnClickListener { runTask("Update yt-dlp") { updateYtDlp() } }
+        }
+        buttons.add(updateButton)
+        root.addView(updateButton, matchWidth())
+
+        val jsCheckButton = Button(this).apply {
+            text = "QuickJS check"
+            isAllCaps = false
+            setOnClickListener { runTask("QuickJS check") { quickJsCheck() } }
+        }
+        buttons.add(jsCheckButton)
+        root.addView(jsCheckButton, matchWidth())
+
         progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
             progress = 0
@@ -197,6 +213,37 @@ class MainActivity : Activity() {
         ui {
             log("title=${info.title ?: info.fulltitle}")
             log("duration=${info.duration}s · formats=${formats.size} · heights=${heights.take(10).joinToString(",")}")
+        }
+    }
+
+    private fun updateYtDlp() {
+        log("updating yt-dlp from the stable channel…")
+        val status = YoutubeDL.getInstance().updateYoutubeDL(applicationContext, YoutubeDL.UpdateChannel.STABLE)
+        val version = YoutubeDL.version(applicationContext)
+        ui { log("yt-dlp update=$status · version=$version") }
+    }
+
+    /** Runs a simulated extract and surfaces yt-dlp's JS-runtime / nsig diagnostics. */
+    private fun quickJsCheck() {
+        log("running a simulated extract with verbose diagnostics…")
+        val request = YoutubeDLRequest(url())
+            .addOption("--simulate")
+            .addOption("--dump-json")
+            .addOption("--verbose")
+        val response = YoutubeDL.getInstance().execute(request)
+        val lines = response.err.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        val problems = lines.filter {
+            it.contains("No supported JavaScript runtime", ignoreCase = true) ||
+                it.contains("nsig extraction failed", ignoreCase = true)
+        }
+        val runtime = lines.filter {
+            it.contains("quickjs", ignoreCase = true) ||
+                it.contains("js runtime", ignoreCase = true)
+        }
+        ui {
+            if (problems.isEmpty()) log("no JavaScript-runtime or nsig errors") else problems.take(6).forEach { log(it) }
+            runtime.take(6).forEach { log(it) }
+            if (problems.isEmpty() && runtime.isEmpty()) log("QuickJS enabled · no runtime errors reported")
         }
     }
 

@@ -1,6 +1,6 @@
 # Tauri v2 migration plan (Windows + Android)
 
-Status: planning / Phase 0 spike in progress.
+Status: Phase 0 complete. Phase 1 not started.
 
 ## Goal
 
@@ -48,12 +48,26 @@ Measured so far:
 | `arm64-v8a` | 57.2 MB |
 | `x86_64` | 60.1 MB |
 
+Phase 0 result: **passed** on an Android 15 x86_64 emulator.
+
+- probe returned 39 formats with heights up to 2160p;
+- QuickJS reported `Solving JS challenges using quickjs` with no nsig errors;
+- MP4 output was 10.00 s, 1280×720 H.264 + AAC;
+- MP3 output was 10.02 s, 192 kbps stereo;
+- both files landed in `Downloads/ClipshedSpike` through MediaStore.
+
+One critical finding: the yt-dlp bundled with `youtubedl-android` 0.18.1 is
+2025.11.12, which YouTube rejects with 403/SABR. After updating to 2026.10.26,
+downloads worked. The Android app must update yt-dlp on first launch and expose
+the update action in Settings.
+
 ### Phase 1: Android Tauri shell
 
 Wrap the proven engine in Tauri Android:
 
 - Kotlin `Ktor` server implementing the same HTTP/SSE API;
 - foreground service so downloads survive backgrounding;
+- update yt-dlp on first launch (and expose the update action in Settings);
 - MediaStore output to `Downloads/Clipshed`;
 - cookie import through the system file picker (no browser-cookie reading);
 - Tauri window loads `http://127.0.0.1:<port>`;
@@ -114,8 +128,10 @@ Still needed for Tauri Android:
 
 - `youtubedl-android` is GPLv3. Personal sideloading is fine; public distribution
   requires source/notices.
-- YouTube extraction depends on the bundled yt-dlp and QuickJS versions. Test
-  early and keep the library current.
+- YouTube extraction depends on the bundled yt-dlp and QuickJS versions. The
+  library's bundled yt-dlp was already stale in the Phase 0 spike and had to be
+  updated before downloads worked. Update on first launch and keep the library
+  current.
 - Android background execution, MediaStore, cookie import, and notifications are
   real feature work, not shell polish.
 - Two server implementations can drift. Keep API contract tests and compare
