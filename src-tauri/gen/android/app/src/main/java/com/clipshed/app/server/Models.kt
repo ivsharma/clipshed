@@ -168,3 +168,6 @@ data class SaveResult(val saved: Boolean, val filename: String, val uri: String)
 
 @Serializable
 data class UpdateResult(val ok: Boolean, val output: String, val health: Health)
+
+@Serializable
+data class ClipboardPayload(val text: String? = null)

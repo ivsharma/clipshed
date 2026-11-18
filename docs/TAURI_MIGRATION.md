@@ -81,6 +81,8 @@ Implemented in `src-tauri`. The Android server lives under
   navigating to a file URL.
 - The Settings dialog accepts a Netscape-format `cookies.txt` import on Android.
   Browser-cookie mode is hidden there.
+- The Paste button reads the device clipboard through `/api/clipboard` on
+  Android, because Android WebViews deny the async clipboard API.
 - Job history persists in `jobs.json`; active jobs interrupted by a restart are
   marked failed.
 - Launcher icons are generated from `desktop/resources/icon.svg` with
@@ -97,7 +99,8 @@ Verified on an Android 15 x86_64 emulator:
 - saving writes to `Downloads/Clipshed` (duplicate names become `(1)`);
 - a download completes while the app is backgrounded, then the service stops;
 - cancel leaves no service or temp files;
-- settings, cookie import, history persistence, and update checks work.
+- settings, cookie import, history persistence, and update checks work;
+- the Paste button reads the clipboard and fills the URL field.
 
 Known Phase 1 limitations:
 

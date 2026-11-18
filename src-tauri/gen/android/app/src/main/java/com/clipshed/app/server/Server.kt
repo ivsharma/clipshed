@@ -1,6 +1,8 @@
 package com.clipshed.app.server
 
 import android.app.Application as AndroidApplication
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Build
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -187,6 +189,19 @@ fun KtorApplication.module() {
         route("/api") {
             get("/health") {
                 call.respond(ServerHost.health())
+            }
+
+            get("/clipboard") {
+                val text = withContext(Dispatchers.Main) {
+                    val manager = ServerHost.context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    val clip = manager?.primaryClip
+                    if (clip != null && clip.itemCount > 0) {
+                        clip.getItemAt(0).coerceToText(ServerHost.context)?.toString()?.takeIf { it.isNotBlank() }
+                    } else {
+                        null
+                    }
+                }
+                call.respond(ClipboardPayload(text))
             }
 
             post("/probe") {

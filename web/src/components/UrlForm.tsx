@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Clipboard, Link2, Loader2, Search } from "lucide-react";
+import { api } from "../lib/api";
 
 interface UrlFormProps {
   url: string;
@@ -9,7 +10,8 @@ interface UrlFormProps {
 }
 
 export function UrlForm({ url, onUrlChange, onSubmit, loading }: UrlFormProps) {
-  const [pasted, setPasted] = useState(false);
+  const [pasteState, setPasteState] = useState<"idle" | "pasted" | "failed">("idle");
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -17,16 +19,42 @@ export function UrlForm({ url, onUrlChange, onSubmit, loading }: UrlFormProps) {
     onSubmit();
   };
 
+  const showPasteState = (state: "pasted" | "failed") => {
+    setPasteState(state);
+    window.setTimeout(() => setPasteState("idle"), 1400);
+  };
+
   const handlePaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      if (text.trim()) {
-        onUrlChange(text.trim());
-        setPasted(true);
-        window.setTimeout(() => setPasted(false), 1400);
+      let text: string | null = null;
+
+      // Android WebViews often deny the async clipboard API. The local
+      // Kotlin server can read the device clipboard while the app is focused.
+      if (isAndroid) {
+        try {
+          text = (await api.readClipboard()).text;
+        } catch (error) {
+          console.warn("Native clipboard read failed", error);
+        }
+      }
+
+      if (!text?.trim()) {
+        try {
+          text = await navigator.clipboard.readText();
+        } catch (error) {
+          console.warn("Web clipboard read failed", error);
+        }
+      }
+
+      const trimmed = text?.trim();
+      if (trimmed) {
+        onUrlChange(trimmed);
+        showPasteState("pasted");
+      } else {
+        showPasteState("failed");
       }
     } catch {
-      // Clipboard permission is optional; manual paste still works.
+      showPasteState("failed");
     }
   };
 
@@ -61,7 +89,7 @@ export function UrlForm({ url, onUrlChange, onSubmit, loading }: UrlFormProps) {
             title="Paste from clipboard"
           >
             <Clipboard className="h-3 w-3" />
-            {pasted ? "Pasted" : "Paste"}
+            {pasteState === "pasted" ? "Pasted" : pasteState === "failed" ? "Failed" : "Paste"}
           </button>
         </div>
 

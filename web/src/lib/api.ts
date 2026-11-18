@@ -118,6 +118,10 @@ export const api = {
     return request<Health>("/api/health");
   },
 
+  readClipboard(): Promise<{ text: string | null }> {
+    return request<{ text: string | null }>("/api/clipboard");
+  },
+
   updateYtDlp(): Promise<{ ok: boolean; output: string; health: Health }> {
     return request<{ ok: boolean; output: string; health: Health }>(
       "/api/ytdlp/update",

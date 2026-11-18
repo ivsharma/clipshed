@@ -24,6 +24,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Desktop builds now keep only the `en-US` Chromium locale, removing about 48 MB
   of unused locale packs (about 8 MB from the compressed artifacts).
 
+### Fixed
+
+- Android: the Paste button now reads the clipboard through the local Kotlin
+  server, since Android WebViews block the async clipboard API.
+
 ## [1.1.0] - 2026-11-16
 
 ### Added
