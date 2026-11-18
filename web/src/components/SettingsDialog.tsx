@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { AlertTriangle, CheckCircle, Contrast, ExternalLink, FileText, Globe2, Loader2, Moon, RefreshCw, Shield, Sun, X } from "lucide-react";
 import type { CookiesBrowser, CookiesMode, Health, Settings, UpdateCheck } from "@clipshed/shared";
 import type { LucideIcon } from "lucide-react";
@@ -14,6 +14,7 @@ interface SettingsDialogProps {
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
   onSave: (settings: Settings) => Promise<void>;
+  onImportCookies: (filename: string, content: string) => Promise<void>;
   onUpdateYtDlp: () => Promise<{ ok: boolean; output: string }>;
   onCheckUpdates: () => Promise<UpdateCheck>;
 }
@@ -66,7 +67,7 @@ const THEMES: Array<{
   },
 ];
 
-export function SettingsDialog({ open, onClose, settings, health, saving, theme, onThemeChange, onSave, onUpdateYtDlp, onCheckUpdates }: SettingsDialogProps) {
+export function SettingsDialog({ open, onClose, settings, health, saving, theme, onThemeChange, onSave, onImportCookies, onUpdateYtDlp, onCheckUpdates }: SettingsDialogProps) {
   const [draft, setDraft] = useState<Settings | null>(settings);
   const [updating, setUpdating] = useState(false);
   const [updateOutput, setUpdateOutput] = useState<string | null>(null);
@@ -74,10 +75,16 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
   const [updateCheck, setUpdateCheck] = useState<UpdateCheck | null>(null);
   const [updateCheckError, setUpdateCheckError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const modes = isAndroid ? MODES.filter((mode) => mode.id !== "browser") : MODES;
 
   useEffect(() => {
-    if (open && settings) setDraft(settings);
-  }, [open, settings]);
+    if (!open || !settings) return;
+    setDraft(isAndroid && settings.cookiesMode === "browser" ? { ...settings, cookiesMode: "none" } : settings);
+  }, [open, settings, isAndroid]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,6 +149,24 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
     }
   };
 
+  const handleImportCookies = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImporting(true);
+    setImportError(null);
+    try {
+      const content = await file.text();
+      await onImportCookies(file.name, content);
+      setDraft((current) => (current ? { ...current, cookiesMode: "file" } : current));
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Could not import cookies.txt.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const checkedAtLabel = updateCheck
     ? new Date(updateCheck.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
@@ -195,7 +220,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
-              {MODES.map((mode) => {
+              {modes.map((mode) => {
                 const Icon = mode.icon;
                 const selected = draft.cookiesMode === mode.id;
                 return (
@@ -221,16 +246,48 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
             </div>
 
             {draft.cookiesMode === "file" ? (
-              <label className="mt-3 block">
-                <span className="mono-label mb-1.5 block">cookies.txt path</span>
-                <input
-                  value={draft.cookiesFile}
-                  onChange={(event) => setDraft({ ...draft, cookiesFile: event.target.value })}
-                  className="field h-10 px-3 font-mono text-[12px]"
-                  placeholder="C:\Users\you\cookies.txt"
-                  spellCheck={false}
-                />
-              </label>
+              <div className="mt-3">
+                {isAndroid ? (
+                  <div>
+                    <p className="mb-2 text-[11px] leading-relaxed text-[var(--ink-mute)]">
+                      Import a Netscape-format cookies.txt exported from a browser. It is saved only on this device.
+                    </p>
+                    <label className="btn-secondary h-10 cursor-pointer px-3 text-[11px]">
+                      <input
+                        type="file"
+                        accept=".txt,text/plain"
+                        className="hidden"
+                        disabled={importing}
+                        onChange={(event) => void handleImportCookies(event)}
+                      />
+                      {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                      {importing ? "Importing…" : "Import cookies.txt"}
+                    </label>
+                    {draft.cookiesFile ? (
+                      <p className="mt-2 break-all font-mono text-[10px] leading-relaxed text-[var(--ink-mute)]">
+                        Imported: {draft.cookiesFile}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <label className="block">
+                    <span className="mono-label mb-1.5 block">cookies.txt path</span>
+                    <input
+                      value={draft.cookiesFile}
+                      onChange={(event) => setDraft({ ...draft, cookiesFile: event.target.value })}
+                      className="field h-10 px-3 font-mono text-[12px]"
+                      placeholder="C:\Users\you\cookies.txt"
+                      spellCheck={false}
+                    />
+                  </label>
+                )}
+                {importError ? (
+                  <div className="mt-2 flex items-start gap-2 border-l-2 border-l-[var(--red)] bg-[var(--paper)] px-3 py-2 text-[11px] leading-relaxed text-[var(--red)]">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {importError}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             {draft.cookiesMode === "browser" ? (

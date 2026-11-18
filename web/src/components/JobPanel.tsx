@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { AlertTriangle, CheckCircle, Download, FileAudio, FileVideo, Loader2, RotateCcw, X } from "lucide-react";
 import {
   PLATFORM_LABELS,
@@ -10,6 +11,7 @@ import {
   type Job,
   type JobOutput,
 } from "@clipshed/shared";
+import { api } from "../lib/api";
 import { cn } from "../lib/cn";
 import { formatDate, kindLabel, rangeText, stageLabel, statusLabel } from "../lib/format";
 
@@ -56,6 +58,23 @@ export function JobPanel({ job, onCancel, onReset, onRetry }: JobPanelProps) {
 function Finished({ job, output, onReset }: { job: Job; output: JobOutput; onReset: () => void }) {
   const outputs = [output, job.audioOutput].filter((item): item is JobOutput => Boolean(item));
   const multiple = outputs.length > 1;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [saveNote, setSaveNote] = useState<{ text: string; error: boolean } | null>(null);
+
+  const handleDownload = async (file: JobOutput) => {
+    if (!isAndroid) return;
+    setSavingKey(file.filename);
+    setSaveNote(null);
+    try {
+      const result = await api.saveOutput(job.id, file.mime === "audio/mpeg" ? "mp3" : "mp4");
+      setSaveNote({ text: `Saved ${result.filename} to Downloads/Clipshed.`, error: false });
+    } catch (error) {
+      setSaveNote({ text: error instanceof Error ? error.message : "Could not save the file.", error: true });
+    } finally {
+      setSavingKey(null);
+    }
+  };
 
   return (
     <Shell tone="green">
@@ -102,11 +121,22 @@ function Finished({ job, output, onReset }: { job: Job; output: JobOutput; onRes
               </div>
               <a
                 href={file.downloadUrl}
+                onClick={(event) => {
+                  if (!isAndroid) return;
+                  event.preventDefault();
+                  void handleDownload(file);
+                }}
                 className="btn-ghost h-8 w-8 shrink-0"
                 aria-label={`Download ${isAudio ? "MP3" : "MP4"}`}
                 title={`Download ${isAudio ? "MP3" : "MP4"}`}
               >
-                {isAudio ? <FileAudio className="h-4 w-4" /> : <FileVideo className="h-4 w-4" />}
+                {savingKey === file.filename ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isAudio ? (
+                  <FileAudio className="h-4 w-4" />
+                ) : (
+                  <FileVideo className="h-4 w-4" />
+                )}
               </a>
             </div>
           );
@@ -117,9 +147,17 @@ function Finished({ job, output, onReset }: { job: Job; output: JobOutput; onRes
         {outputs.map((file, index) => {
           const isAudio = file.mime === "audio/mpeg";
           return (
-            <a key={file.filename} href={file.downloadUrl} className={cn("h-11 px-4", index === 0 ? "btn-primary" : "btn-secondary")}>
-              <Download className="h-3.5 w-3.5" />
-              Download {isAudio ? "MP3" : "MP4"}
+            <a key={file.filename} href={file.downloadUrl} onClick={(event) => {
+              if (!isAndroid) return;
+              event.preventDefault();
+              void handleDownload(file);
+            }} className={cn("h-11 px-4", index === 0 ? "btn-primary" : "btn-secondary")}>
+              {savingKey === file.filename ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              {savingKey === file.filename ? "Saving…" : `Download ${isAudio ? "MP3" : "MP4"}`}
             </a>
           );
         })}
@@ -132,8 +170,16 @@ function Finished({ job, output, onReset }: { job: Job; output: JobOutput; onRes
         </ActionButton>
       </Actions>
 
+      {saveNote ? (
+        <p className={cn("mt-3 font-mono text-[10px] leading-relaxed", saveNote.error ? "text-[var(--red)]" : "text-[var(--green)]")}>
+          {saveNote.text}
+        </p>
+      ) : null}
+
       <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.04em] text-[var(--ink-mute)]">
-        YOUR BROWSER SAVES THE FILES TO ITS DOWNLOADS FOLDER. SERVER COPIES ARE CLEANED UP AUTOMATICALLY.
+        {isAndroid
+          ? "FILES ARE SAVED TO DOWNLOADS/CLIPSHED. SERVER COPIES ARE CLEANED UP AUTOMATICALLY."
+          : "YOUR BROWSER SAVES THE FILES TO ITS DOWNLOADS FOLDER. SERVER COPIES ARE CLEANED UP AUTOMATICALLY."}
       </p>
     </Shell>
   );

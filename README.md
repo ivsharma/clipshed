@@ -79,6 +79,27 @@ Builds are currently unsigned, so Windows SmartScreen may warn on first launch.
 The installer is large because it includes Electron, ffmpeg, yt-dlp, and
 QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
 
+## Android app
+
+The Android app uses the same React UI and downloads on-device through a Kotlin
+Tauri shell plus `youtubedl-android` (Python, ffmpeg, and QuickJS). Finished
+files are saved to `Downloads/Clipshed`.
+
+```powershell
+npm run tauri:android:init   # one time
+powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Target aarch64 -Release
+```
+
+Output:
+
+```text
+src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk
+```
+
+The APK is currently signed with the Android debug key. See the
+[Tauri migration plan](docs/TAURI_MIGRATION.md) for build details, the Windows
+symlink workaround, measured sizes, and current limitations.
+
 ## Configuration
 
 Open the gear icon to choose Light, Dark, or Dark contrast, configure cookies (for age-restricted or login-required posts), H.264 preference, check for app updates, and update yt-dlp. Optional `.env` values include `PORT`, `HOST`, `MAX_CONCURRENT_JOBS`, and `JOB_TTL_HOURS`.

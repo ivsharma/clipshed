@@ -1,6 +1,6 @@
 # Tauri v2 migration plan (Windows + Android)
 
-Status: Phase 0 complete. Phase 1 not started.
+Status: Phase 1 complete for Android. Phase 2 (Windows Tauri shell) not started.
 
 ## Goal
 
@@ -61,20 +61,82 @@ One critical finding: the yt-dlp bundled with `youtubedl-android` 0.18.1 is
 downloads worked. The Android app must update yt-dlp on first launch and expose
 the update action in Settings.
 
-### Phase 1: Android Tauri shell
+### Phase 1: Android Tauri shell — complete
 
-Wrap the proven engine in Tauri Android:
+Implemented in `src-tauri`. The Android server lives under
+`src-tauri/gen/android/app/src/main/java/com/clipshed/app/server`.
 
-- Kotlin `Ktor` server implementing the same HTTP/SSE API;
-- foreground service so downloads survive backgrounding;
-- update yt-dlp on first launch (and expose the update action in Settings);
-- MediaStore output to `Downloads/Clipshed`;
-- cookie import through the system file picker (no browser-cookie reading);
-- Tauri window loads `http://127.0.0.1:<port>`;
-- clear it with a cleartext-traffic exception for loopback.
+- The Tauri window loads `http://127.0.0.1:43123`, served by an embedded Ktor CIO
+  server. The server also serves the built React UI, so the frontend still uses
+  relative `/api` paths and SSE.
+- The Ktor server implements the existing API: health, probe, settings, cookies
+  import, jobs, SSE events, cancel, delete, file serving, MediaStore save,
+  updates check, and yt-dlp update.
+- `youtubedl-android` 0.18.1 provides Python, yt-dlp, ffmpeg, and QuickJS. yt-dlp
+  updates automatically on first launch and from Settings.
+- A foreground `DownloadService` keeps downloads alive when the app is
+  backgrounded and shows progress in a notification.
+- Finished files are published to `Downloads/Clipshed` through MediaStore.
+  The shared UI detects Android and calls `POST /api/jobs/{id}/save` instead of
+  navigating to a file URL.
+- The Settings dialog accepts a Netscape-format `cookies.txt` import on Android.
+  Browser-cookie mode is hidden there.
+- Job history persists in `jobs.json`; active jobs interrupted by a restart are
+  marked failed.
+- Launcher icons are generated from `desktop/resources/icon.svg` with
+  `tauri icon`.
 
-The Tauri shell should start the server before loading the URL and should fail
-with a readable error if the server cannot start.
+Verified on an Android 15 x86_64 emulator:
+
+- the real React UI loads in the Tauri WebView;
+- health reports yt-dlp 2026.10.26 and bundled ffmpeg;
+- probe of Big Buck Bunny returns 635 s, 39 formats, up to 2160p;
+- MP4 is 10.03 s, 1280×720 H.264 + AAC;
+- MP3 is 10.02 s, 192 kbps stereo;
+- Both produces MP4 + MP3 from one MP4 download;
+- saving writes to `Downloads/Clipshed` (duplicate names become `(1)`);
+- a download completes while the app is backgrounded, then the service stops;
+- cancel leaves no service or temp files;
+- settings, cookie import, history persistence, and update checks work.
+
+Known Phase 1 limitations:
+
+- Progress is coarse for `--download-sections` jobs (indeterminate, then 99–100%)
+  because yt-dlp delegates the range fetch to ffmpeg. Other downloads use
+  yt-dlp's own progress.
+- Only `cookies.txt` import is supported; browser-cookie reading is not.
+- The release APK is signed with the Android debug key. Replace the release
+  `signingConfig` with a real keystore before sharing it.
+- Tauri warns that `com.clipshed.app` ends in `.app`; this only matters for
+  macOS, which is not a target.
+
+#### Building the Android APK on Windows
+
+Tauri creates a symlink for the Rust `.so` in `jniLibs`. A non-elevated Windows
+shell cannot do that unless Developer Mode is enabled. `scripts/build-android.ps1`
+works around this by building the Rust library, copying it into `jniLibs`, and
+running Gradle with the Rust tasks skipped:
+
+```powershell
+# arm64 release for a phone
+powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Target aarch64 -Release
+
+# x86_64 release for the emulator
+powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Target x86_64 -Release
+```
+
+Requires `JAVA_HOME`, `ANDROID_HOME`, and `NDK_HOME`. The arm64 release build
+also sets 16 KB page-size linker flags.
+
+Output:
+
+```text
+src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk
+src-tauri/gen/android/app/build/outputs/apk/x86_64/release/app-x86_64-release.apk
+```
+
+With Developer Mode enabled, the normal `npx tauri android build --apk --target
+aarch64` path works without the wrapper script.
 
 ### Phase 2: Windows Tauri shell
 
@@ -96,12 +158,14 @@ Android, because Android still needs Kotlin plus `youtubedl-android`.
 
 ## Size budget
 
-| Target | Installed |
+| Target | Size |
 |---|---:|
 | Current Windows (Electron, en-US locale) | 497.8 MB |
-| Windows Tauri + Node sidecar | ~293 MB |
-| Windows Tauri + Rust backend | ~200 MB |
-| Android arm64 APK | ~57 MB (measured Phase 0) |
+| Windows Tauri + Node sidecar (planned) | ~293 MB |
+| Windows Tauri + Rust backend (optional) | ~200 MB |
+| Android arm64 release APK | **71.0 MB** |
+| Android x86_64 release APK | **74.0 MB** |
+| Android arm64 debug APK | 106.9 MB |
 
 The shared WebView2 runtime is not included in the Windows number. It ships with
 Windows 11 and current Windows 10/Edge installs; a fixed-runtime bundle would add
@@ -114,15 +178,12 @@ Installed for this work:
 - Rust 1.100 (MSVC) with the four Android targets;
 - Visual Studio 2022 Build Tools (C++ workload);
 - JDK 21 (Temurin);
-- Android SDK command-line tools, platform 35, build-tools 35.0.0, emulator;
-- Gradle 8.13 and a project wrapper.
+- Android SDK command-line tools, platform 36, build-tools 36.0.0, emulator;
+- Android NDK 27.3.13750724;
+- Tauri CLI 2.12.5 via `@tauri-apps/cli`;
+- Gradle 9.6.1 through the Android project wrapper.
 
-Still needed for Tauri Android:
-
-- Android NDK (`ndk;27.x` or the version required by the Tauri template);
-- `@tauri-apps/cli` in the project;
-- a Tauri `src-tauri` scaffold;
-- `cargo-ndk` if the Tauri template requires it.
+The Windows Tauri shell (Phase 2) needs no additional toolchain.
 
 ## Risks
 
@@ -136,6 +197,7 @@ Still needed for Tauri Android:
   real feature work, not shell polish.
 - Two server implementations can drift. Keep API contract tests and compare
   responses between the Node and Kotlin servers.
-- Tauri Android loading a loopback URL needs a cleartext exception; verify before
-  building the full API.
+- Range-download progress is coarse on Android because ffmpeg performs the cut;
+  improving it needs a separate progress parser.
+- The release APK must be re-signed with a real keystore before distribution.
 - Windows Tauri + Node still ships Node. Only the Phase 3 Rust port removes it.

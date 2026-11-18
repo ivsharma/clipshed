@@ -100,6 +100,20 @@ export const api = {
     });
   },
 
+  importCookies(filename: string, content: string): Promise<SettingsPayload> {
+    return request<SettingsPayload>("/api/settings/cookies", {
+      method: "POST",
+      body: JSON.stringify({ filename, content }),
+    });
+  },
+
+  saveOutput(jobId: string, kind: "mp4" | "mp3"): Promise<{ saved: boolean; filename: string; uri: string }> {
+    return request<{ saved: boolean; filename: string; uri: string }>(`/api/jobs/${jobId}/save`, {
+      method: "POST",
+      body: JSON.stringify({ kind }),
+    });
+  },
+
   getHealth(): Promise<Health> {
     return request<Health>("/api/health");
   },

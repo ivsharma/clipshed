@@ -244,6 +244,13 @@ export default function App() {
     return result;
   };
 
+  const handleImportCookies = async (filename: string, content: string) => {
+    const payload = await api.importCookies(filename, content);
+    setSettings(payload.settings);
+    setHealth(payload.health);
+    setToast("Cookies imported");
+  };
+
   const handleCheckUpdates = () => api.checkForUpdates();
 
   const openSettings = () => {
@@ -387,6 +394,7 @@ export default function App() {
         theme={theme}
         onThemeChange={setTheme}
         onSave={handleSaveSettings}
+        onImportCookies={handleImportCookies}
         onUpdateYtDlp={handleUpdateYtDlp}
         onCheckUpdates={handleCheckUpdates}
       />
