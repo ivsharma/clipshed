@@ -222,7 +222,7 @@ function Running({ job, onCancel }: { job: Job; onCancel: () => void }) {
           </div>
         </div>
 
-        <div className="mt-6" aria-live="polite">
+        <div className="mt-6">
           <div className="mb-2 flex items-end justify-between">
             <span className="mono-label">Progress</span>
             <span className="font-mono text-2xl font-semibold tracking-[-0.04em] text-[var(--ink)]">
@@ -230,13 +230,12 @@ function Running({ job, onCancel }: { job: Job; onCancel: () => void }) {
             </span>
           </div>
 
-          <div className="progress-track">
-            {percent === null ? (
-              <div className="progress-indeterminate" />
-            ) : (
-              <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
-            )}
-          </div>
+          <progress
+            className="progress"
+            max={100}
+            value={percent === null ? undefined : Math.min(100, Math.max(0, percent))}
+            aria-label="Download progress"
+          />
 
           <div className="mt-3 grid grid-cols-2 border border-[var(--line-strong)] sm:grid-cols-4">
             <Stat

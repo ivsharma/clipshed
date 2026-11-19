@@ -260,6 +260,29 @@ flowchart LR
 | Storage | Local JSON history + app data folders |
 | Tests | Vitest (TypeScript); Rust/Kotlin have no unit tests yet |
 
+### Modern web guidance
+
+The UI is checked against the Google Chrome
+[Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) skill.
+The vendored skill lives in `.opencode/skills/modern-web-guidance/`; the project
+browser-support policy and usage rules are in `AGENTS.md`.
+
+Use the CLI when changing HTML/CSS/client-side behavior:
+
+```powershell
+$env:DISABLE_TELEMETRY = "1"
+npx -y modern-web-guidance@latest search "<query>"
+npx -y modern-web-guidance@latest retrieve "<guide-id>"
+```
+
+The current UI uses native `<dialog>` + `showModal()` for the settings modal,
+native `<progress>` for download progress, safe-area insets, a guarded
+IME-safe Enter handler in the time fields, and a polite live status for the
+toast. `legacy-scan web/src` reports no legacy-pattern findings, and the local
+landing page scores 100 for Lighthouse accessibility and best practices (the
+only remaining SEO finding is a missing `robots.txt`, irrelevant to the local
+desktop/mobile app).
+
 ## Tauri migration: what changed and why
 
 The migration kept the React UI and the HTTP/SSE contract. It replaced the

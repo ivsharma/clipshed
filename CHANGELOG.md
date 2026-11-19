@@ -30,6 +30,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   now read from ffmpeg's input banner, and its size comes from the file system.
 - Tauri is now the only Windows desktop shell. The Electron fallback and its
   build tooling were removed after the Tauri app passed interactive testing.
+- Settings now uses the native modal `<dialog>` API, and download progress uses
+  the native `<progress>` element. The time inputs guard Enter handling during
+  IME composition, and the toast is exposed as a polite status message.
+- Improved light and dark text contrast for muted copy and accent text; the
+  landing page now scores 100 for accessibility and best practices in Lighthouse.
 - Cookie-based sign-in is temporarily disabled and shown as “Coming soon” in
   Settings. Existing cookie settings are ignored until it returns.
 

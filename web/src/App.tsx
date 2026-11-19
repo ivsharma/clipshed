@@ -432,7 +432,11 @@ export default function App() {
       />
 
       {toast ? (
-        <div className="toast-safe animate-fade-in fixed z-[60] flex items-center gap-2 border border-[var(--ink)] bg-[var(--ink)] px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--paper-raised)] shadow-[4px_4px_0_var(--red)]">
+        <div
+          role="status"
+          aria-live="polite"
+          className="toast-safe animate-fade-in fixed z-[60] flex items-center gap-2 border border-[var(--ink)] bg-[var(--ink)] px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--paper-raised)] shadow-[4px_4px_0_var(--red)]"
+        >
           <CheckCircle className="h-4 w-4 text-[var(--red)]" />
           {toast}
         </div>

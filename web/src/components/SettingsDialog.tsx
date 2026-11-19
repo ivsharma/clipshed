@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { AlertTriangle, CheckCircle, Contrast, ExternalLink, FileText, Globe2, Loader2, Moon, RefreshCw, Shield, Sun, X } from "lucide-react";
 import type { CookiesBrowser, CookiesMode, Health, Settings, UpdateCheck } from "@clipshed/shared";
 import type { LucideIcon } from "lucide-react";
@@ -71,6 +71,7 @@ const THEMES: Array<{
 ];
 
 export function SettingsDialog({ open, onClose, settings, health, saving, theme, onThemeChange, onSave, onImportCookies, onUpdateYtDlp, onCheckUpdates }: SettingsDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<Settings | null>(settings);
   const [updating, setUpdating] = useState(false);
   const [updateOutput, setUpdateOutput] = useState<string | null>(null);
@@ -94,31 +95,75 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
   }, [open, settings, isAndroid]);
 
   useEffect(() => {
-    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const handleClose = () => onClose();
+    dialog.addEventListener("close", handleClose);
+    return () => dialog.removeEventListener("close", handleClose);
+  }, [onClose]);
 
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
 
     return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKeyDown);
+      if (dialog?.open) dialog.close();
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // `closedby` is progressive enhancement. Chromium 134+ handles light dismiss
+  // natively; this covers the older Android WebViews the app supports.
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog || "closedBy" in HTMLDialogElement.prototype) return;
+
+    const isOutside = (event: PointerEvent): boolean => {
+      const rect = dialog.getBoundingClientRect();
+      return event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+    };
+    let pressedOutside = false;
+    const onPointerDown = (event: PointerEvent) => {
+      pressedOutside = isOutside(event);
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (pressedOutside && isOutside(event)) dialog.close();
+      pressedOutside = false;
+    };
+
+    dialog.addEventListener("pointerdown", onPointerDown);
+    dialog.addEventListener("pointerup", onPointerUp);
+    return () => {
+      dialog.removeEventListener("pointerdown", onPointerDown);
+      dialog.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [open]);
+
+  const closeDialog = () => {
+    const dialog = dialogRef.current;
+    if (dialog?.open) dialog.close();
+    else onClose();
+  };
 
   if (!open) return null;
 
   if (!draft) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
-        <div className="panel flex items-center gap-3 px-5 py-4 font-mono text-[12px] text-[var(--ink-soft)]">
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="settings-loading-title"
+        className="settings-dialog panel"
+        {...({ closedby: "any" } as Record<string, string>)}
+      >
+        <h2 id="settings-loading-title" className="sr-only">
+          Loading settings
+        </h2>
+        <div className="flex items-center gap-3 px-5 py-4 font-mono text-[12px] text-[var(--ink-soft)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading settings…
         </div>
-      </div>
+      </dialog>
     );
   }
 
@@ -190,29 +235,23 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
     : null;
 
   return (
-    <div
-      className="settings-overlay fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay)] sm:items-center"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="settings-title"
+      className="settings-dialog panel animate-fade-in shadow-[8px_8px_0_var(--shadow)]"
+      {...({ closedby: "any" } as Record<string, string>)}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
-        className="panel animate-fade-in flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden shadow-[8px_8px_0_var(--shadow)]"
-      >
-        <div className="flex shrink-0 items-start justify-between border-b border-[var(--line-strong)] px-5 py-4 sm:px-6">
-          <div>
-            <div className="mono-label text-[var(--red)]">Local settings</div>
-            <h2 id="settings-title" className="display mt-1 text-3xl text-[var(--ink)]">
-              Settings
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="btn-secondary h-8 w-8 p-0" aria-label="Close settings">
-            <X className="h-4 w-4" />
-          </button>
+      <div className="flex shrink-0 items-start justify-between border-b border-[var(--line-strong)] px-5 py-4 sm:px-6">
+        <div>
+          <div className="mono-label text-[var(--red)]">Local settings</div>
+          <h2 id="settings-title" className="display mt-1 text-3xl text-[var(--ink)]">
+            Settings
+          </h2>
         </div>
+        <button type="button" onClick={closeDialog} className="btn-secondary h-8 w-8 p-0" aria-label="Close settings" autoFocus>
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <section>
@@ -559,7 +598,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
         </div>
 
         <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--line-strong)] px-5 py-3.5 sm:px-6">
-          <button type="button" onClick={onClose} className="btn-secondary h-10 px-4 text-[11px]">
+          <button type="button" onClick={closeDialog} className="btn-secondary h-10 px-4 text-[11px]">
             Cancel
           </button>
           <button type="button" onClick={() => void handleSave()} disabled={saving} className="btn-primary h-10 min-w-[110px] px-5">
@@ -567,8 +606,7 @@ export function SettingsDialog({ open, onClose, settings, health, saving, theme,
             {saving ? "Saving…" : "Save settings"}
           </button>
         </div>
-      </div>
-    </div>
+    </dialog>
   );
 }
 

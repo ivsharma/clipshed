@@ -20,15 +20,15 @@
   --input: #fffdf8;
   --ink: #141310;
   --ink-soft: #444037;
-  --ink-mute: #777166;
+  --ink-mute: #6b655b;
   --line: rgba(20, 19, 16, 0.16);
   --line-strong: #141310;
 
-  --red: #d93a1f;
+  --red: #c92f15;
   --red-dark: #a92a14;
-  --red-soft: rgba(217, 58, 31, 0.06);
-  --red-hover: rgba(217, 58, 31, 0.05);
-  --red-select: rgba(217, 58, 31, 0.22);
+  --red-soft: rgba(201, 47, 21, 0.06);
+  --red-hover: rgba(201, 47, 21, 0.05);
+  --red-select: rgba(201, 47, 21, 0.22);
   --green: #1e6b47;
   --green-soft: rgba(30, 107, 71, 0.06);
   --amber: #8a5a00;
@@ -58,7 +58,7 @@
   --input: #221f1a;
   --ink: #ded7c8;
   --ink-soft: #b9b1a3;
-  --ink-mute: #8f8779;
+  --ink-mute: #9a9284;
   --line: rgba(222, 215, 200, 0.14);
   --line-strong: #b6ae9f;
 
@@ -177,14 +177,48 @@ body::after {
   height: var(--safe-area-inset-bottom);
 }
 
-/* The settings sheet is viewport-fixed, so it needs the insets directly. */
-.settings-overlay {
-  padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+/*
+ * Native modal dialog. The browser provides the top layer, inert background,
+ * focus containment, Esc/back dismissal, and focus return. Do not add a manual
+ * focus trap or lock html/body scrolling.
+ */
+.settings-dialog {
+  display: none;
+  width: 100%;
+  max-width: 36rem;
+  max-height: 92vh;
+  max-height: min(92dvh, calc(100dvh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)));
+  margin: auto auto 0;
+  margin-bottom: max(var(--safe-area-inset-bottom), 0px);
+  padding: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+}
+
+.settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-dialog::backdrop {
+  background: var(--overlay);
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 @media (min-width: 640px) {
-  .settings-overlay {
-    padding: max(1rem, var(--safe-area-inset-top)) max(1rem, var(--safe-area-inset-right)) max(1rem, var(--safe-area-inset-bottom)) max(1rem, var(--safe-area-inset-left));
+  .settings-dialog {
+    max-height: 92dvh;
+    margin: auto;
   }
 }
 
@@ -526,22 +560,41 @@ summary:focus-visible {
     transform: translate(-50%, -50%) scale(1.04);
   }
 
-  .progress-track {
+  .progress {
+    appearance: none;
+    display: block;
+    width: 100%;
     height: 14px;
     border: 1px solid var(--ink);
+    overflow: clip;
     background: var(--input);
-    overflow: hidden;
+    container-type: inline-size;
+    --progress-bar-indeterminate-size: 30%;
+    --progress-bar-indeterminate-duration: 900ms;
   }
 
-  .progress-fill {
-    height: 100%;
+  .progress::-webkit-progress-bar {
+    background: var(--input);
+  }
+
+  .progress::-webkit-progress-value {
     background: var(--red);
-    transition: width 250ms ease;
+    transition: inline-size 250ms ease;
+    animation: var(--progress-bar-animation, revert-rule);
   }
 
-  .progress-indeterminate {
-    height: 100%;
-    width: 50%;
+  .progress::-moz-progress-bar {
+    background: var(--red);
+    transition: inline-size 250ms ease;
+    animation: var(--progress-bar-animation, revert-rule);
+  }
+
+  .progress:indeterminate {
+    --progress-bar-animation: progress-bar-indeterminate
+      var(--progress-bar-indeterminate-duration) infinite linear;
+  }
+
+  .progress:indeterminate::-webkit-progress-value {
     background: repeating-linear-gradient(
       45deg,
       var(--red) 0,
@@ -549,8 +602,27 @@ summary:focus-visible {
       var(--ink) 8px,
       var(--ink) 16px
     );
-    background-size: 23px 23px;
-    animation: slide-hatch 900ms linear infinite;
+  }
+
+  .progress:indeterminate::-moz-progress-bar {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--red) 0,
+      var(--red) 8px,
+      var(--ink) 8px,
+      var(--ink) 16px
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .progress {
+      --progress-bar-indeterminate-duration: 10s;
+    }
+
+    .progress::-webkit-progress-value,
+    .progress::-moz-progress-bar {
+      transition: none;
+    }
   }
 
   .skeleton {
@@ -587,12 +659,18 @@ summary:focus-visible {
   }
 }
 
-@keyframes slide-hatch {
+@keyframes progress-bar-indeterminate {
+  from,
+  to {
+    inline-size: var(--progress-bar-indeterminate-size);
+    /* Keep Chromium's fill at the physical left in RTL. */
+    margin-right: auto;
+  }
   from {
-    background-position: 0 0;
+    translate: -100%;
   }
   to {
-    background-position: 23px 0;
+    translate: 100cqi;
   }
 }
 
