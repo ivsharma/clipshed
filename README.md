@@ -77,7 +77,7 @@ npm run tauri:windows:build
 Output:
 
 ```text
-src-tauri\target\release\bundle\nsis\Clipshed_1.1.0_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Clipshed_2.0.0_x64-setup.exe
 ```
 
 For development:

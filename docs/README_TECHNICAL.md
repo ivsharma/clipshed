@@ -139,7 +139,7 @@ npm run tauri:windows:build
 Output:
 
 ```text
-src-tauri\target\release\bundle\nsis\Clipshed_1.1.0_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Clipshed_<version>_x64-setup.exe
 ```
 
 For development:
@@ -1084,7 +1084,7 @@ builds. Commit SHAs identify individual pushes; Git tags identify releases.
 Tauri artifact names come from `tauri.conf.json`:
 
 ```text
-Clipshed_1.1.0_x64-setup.exe
+Clipshed_2.0.0_x64-setup.exe
 app-arm64-release.apk
 ```
 
@@ -1108,8 +1108,8 @@ Windows, Tauri reads it through `app.package_info()`; on Android, through
    The script checks versions, typechecks, runs tests and desktop checks, builds
    the frontend and server bundle, bumps the root/workspace versions, updates
    `package-lock.json`, the Tauri config, `Cargo.toml`, and `Cargo.lock`,
-   promotes the changelog notes, commits `chore(release): v1.1.0`, and creates
-   the annotated tag `v1.1.0`. It does not push.
+   promotes the changelog notes, commits `chore(release): v2.0.0`, and creates
+   the annotated tag `v2.0.0`. It does not push.
 4. Push the commit and tag:
 
    ```powershell
