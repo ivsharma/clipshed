@@ -19,6 +19,10 @@
 
 ## Modern Web Guidance
 
+The `modern-web-guidance` skill is installed globally at
+`~/.config/opencode/skills/modern-web-guidance/`; do not vendor or commit
+`.opencode/` in this repository.
+
 Before implementing or auditing HTML, CSS, or client-side JavaScript UI work,
 load the `modern-web-guidance` skill and search/retrieve the relevant guide(s).
 Use `npx -y modern-web-guidance@latest`; set `DISABLE_TELEMETRY=1` in local

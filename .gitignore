@@ -4,6 +4,9 @@ web/dist/
 .vite/
 *.tsbuildinfo
 
+# Local agent skills; installed globally instead
+.opencode/
+
 # Local binaries and user data
 bin/
 data/

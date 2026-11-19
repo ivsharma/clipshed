@@ -264,7 +264,8 @@ flowchart LR
 
 The UI is checked against the Google Chrome
 [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) skill.
-The vendored skill lives in `.opencode/skills/modern-web-guidance/`; the project
+The skill is installed globally at `~/.config/opencode/skills/modern-web-guidance/`
+and is intentionally not vendored in this repository. The project
 browser-support policy and usage rules are in `AGENTS.md`.
 
 Use the CLI when changing HTML/CSS/client-side behavior:
