@@ -25,6 +25,25 @@ function writeJson(relativePath, value) {
   writeFileSync(path.join(root, relativePath), `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function updateTauriVersions(version) {
+  const configPath = "src-tauri/tauri.conf.json";
+  const config = readJson(configPath);
+  config.version = version;
+  writeJson(configPath, config);
+
+  const cargoPath = "src-tauri/Cargo.toml";
+  const cargo = readFileSync(path.join(root, cargoPath), "utf8");
+  const packageSection = /(^\[package\][\s\S]*?^version\s*=\s*")[^"]+(")/m;
+  if (!packageSection.test(cargo)) fail("Could not find [package] version in src-tauri/Cargo.toml.");
+  writeFileSync(path.join(root, cargoPath), cargo.replace(packageSection, `$1${version}$2`));
+
+  const lockPath = "src-tauri/Cargo.lock";
+  const lock = readFileSync(path.join(root, lockPath), "utf8");
+  const appPackage = /(\[\[package\]\]\r?\nname = "app"\r?\nversion = ")[^"]+(")/;
+  if (!appPackage.test(lock)) fail('Could not find the "app" package version in src-tauri/Cargo.lock.');
+  writeFileSync(path.join(root, lockPath), lock.replace(appPackage, `$1${version}$2`));
+}
+
 function npm(script) {
   execSync(`npm ${script}`, { cwd: root, stdio: "inherit" });
 }
@@ -119,12 +138,21 @@ for (const file of packageFiles) {
   packageJson.version = version;
   writeJson(file, packageJson);
 }
+updateTauriVersions(version);
 
 npm("install --package-lock-only --ignore-scripts --no-audit --no-fund");
 writeFileSync(changelogPath, promoteUnreleased(changelog, version, notes));
 npm("run version:check");
 
-gitRun(["add", ...packageFiles, "package-lock.json", "CHANGELOG.md"]);
+gitRun([
+  "add",
+  ...packageFiles,
+  "package-lock.json",
+  "CHANGELOG.md",
+  "src-tauri/tauri.conf.json",
+  "src-tauri/Cargo.toml",
+  "src-tauri/Cargo.lock",
+]);
 gitRun(["commit", "-m", `chore(release): v${version}`]);
 gitRun(["tag", "-a", `v${version}`, "-m", `Clipshed ${version}`]);
 

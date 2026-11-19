@@ -1071,12 +1071,12 @@ workspaces and CI. The workspace package versions and `package-lock.json` must
 match it. `npm run version:check` fails if they drift, and CI runs it on every
 push.
 
-Tauri has its own version fields. `src-tauri/tauri.conf.json` and
-`src-tauri/Cargo.toml` must be updated with the same version before building
-release artifacts; the Android `versionName` is generated from the Tauri config.
-`scripts/release.mjs` and `scripts/check-version.mjs` currently only cover the
-npm files, so this sync is a manual release step today. Treat a Tauri build with
-an older config version as invalid.
+Tauri has its own version fields. `scripts/release.mjs` updates
+`src-tauri/tauri.conf.json`, the `[package]` version in
+`src-tauri/Cargo.toml`, and the `app` package entry in `src-tauri/Cargo.lock`
+alongside the npm versions. `scripts/check-version.mjs` fails if any of those
+drift. The Android `versionName` is generated from the Tauri config during the
+Android build.
 
 Do **not** bump the version for every commit. Version numbers describe shipped
 builds. Commit SHAs identify individual pushes; Git tags identify releases.
@@ -1097,45 +1097,33 @@ Windows, Tauri reads it through `app.package_info()`; on Android, through
 ### Release flow
 
 1. Add user-facing notes under `## [Unreleased]` in `CHANGELOG.md`.
-2. Decide the next version with
-   `node scripts/release.mjs minor --dry-run`, then update the Tauri fields so
-   they match before the tag is created:
-
-   ```text
-   src-tauri/tauri.conf.json  -> "version"
-   src-tauri/Cargo.toml       -> [package] version
-   ```
-
-   This is manual today because `release.mjs` only covers the npm workspaces.
-   The first Tauri build after the bump may also update `src-tauri/Cargo.lock`;
-   commit that with the release.
-3. Commit or merge all changes. The release script requires a clean working tree
+2. Commit or merge all changes. The release script requires a clean working tree
    on `main`.
-4. Run the appropriate release command:
+3. Run the appropriate release command:
 
    ```powershell
    npm run release:minor
    ```
 
    The script checks versions, typechecks, runs tests and desktop checks, builds
-   the frontend and server bundle, bumps the root and workspace versions,
-   updates `package-lock.json`, promotes the changelog notes, commits
-   `chore(release): v1.1.0`, and creates the annotated tag `v1.1.0`. It does not
-   push.
-5. Push the commit and tag:
+   the frontend and server bundle, bumps the root/workspace versions, updates
+   `package-lock.json`, the Tauri config, `Cargo.toml`, and `Cargo.lock`,
+   promotes the changelog notes, commits `chore(release): v1.1.0`, and creates
+   the annotated tag `v1.1.0`. It does not push.
+4. Push the commit and tag:
 
    ```powershell
    git push origin main --follow-tags
    ```
 
-6. Build the artifacts:
+5. Build the artifacts:
 
    ```powershell
    npm run tauri:windows:build
    powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Target aarch64 -Release
    ```
 
-7. Create a GitHub Release for the tag and attach the Tauri NSIS installer, the
+6. Create a GitHub Release for the tag and attach the Tauri NSIS installer, the
    arm64 APK, and their SHA-256 hashes. `src-tauri/target/` is gitignored; the
    release page is the distribution point, not the repository.
 
@@ -1318,8 +1306,7 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 - SponsorBlock segment skipping
 - Optional compression presets (with honest “visually similar” labels)
 - Multiple ranges in one job
-- Optional Play Store AAB packaging and release automation for the Tauri
-  version fields
+- Optional Play Store AAB packaging
 
 ## Contributing
 
