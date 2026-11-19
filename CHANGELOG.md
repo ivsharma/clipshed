@@ -22,6 +22,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Recent activity now lists all 100 saved jobs and has a **Clear all** action
   that removes finished jobs and their app-private files. Files already saved to
   Downloads are not affected.
+- The source-link row now has a **Clear** action that resets the fetched video,
+  active job, and URL and returns to the start screen.
 
 ### Changed
 

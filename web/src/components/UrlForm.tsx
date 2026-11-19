@@ -6,10 +6,11 @@ interface UrlFormProps {
   url: string;
   onUrlChange: (url: string) => void;
   onSubmit: () => void;
+  onClear: () => void;
   loading: boolean;
 }
 
-export function UrlForm({ url, onUrlChange, onSubmit, loading }: UrlFormProps) {
+export function UrlForm({ url, onUrlChange, onSubmit, onClear, loading }: UrlFormProps) {
   const [pasteState, setPasteState] = useState<"idle" | "pasted" | "failed">("idle");
   const isAndroid = /Android/i.test(navigator.userAgent);
 
@@ -64,7 +65,19 @@ export function UrlForm({ url, onUrlChange, onSubmit, loading }: UrlFormProps) {
         <label htmlFor="source-url" className="mono-label">
           Source link
         </label>
-        <span className="font-mono text-[12px] text-[var(--ink-mute)]">URL</span>
+        <div className="flex items-center gap-3">
+          {url.trim() ? (
+            <button
+              type="button"
+              onClick={onClear}
+              className="inline-flex min-h-6 items-center px-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-mute)] transition hover:text-[var(--red)]"
+              title="Clear this video and start over"
+            >
+              Clear
+            </button>
+          ) : null}
+          <span className="font-mono text-[12px] text-[var(--ink-mute)]">URL</span>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">

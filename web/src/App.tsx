@@ -313,11 +313,11 @@ export default function App() {
         ) : null}
 
         {showLanding ? (
-          <Landing url={url} onUrlChange={setUrl} onSubmit={() => void handleProbe()} loading={probing} />
+          <Landing url={url} onUrlChange={setUrl} onSubmit={() => void handleProbe()} onClear={handleReset} loading={probing} />
         ) : (
           <div className="space-y-4">
             <div className="panel p-4 sm:p-5">
-              <UrlForm url={url} onUrlChange={setUrl} onSubmit={() => void handleProbe()} loading={probing} />
+              <UrlForm url={url} onUrlChange={setUrl} onSubmit={() => void handleProbe()} onClear={handleReset} loading={probing} />
             </div>
 
             {probing ? <ProbeSkeleton /> : null}

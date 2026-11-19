@@ -5,6 +5,7 @@ interface LandingProps {
   url: string;
   onUrlChange: (url: string) => void;
   onSubmit: () => void;
+  onClear: () => void;
   loading: boolean;
 }
 
@@ -26,7 +27,7 @@ const SOURCES = [
   { name: "INSTAGRAM", status: "Experimental", stable: false },
 ];
 
-export function Landing({ url, onUrlChange, onSubmit, loading }: LandingProps) {
+export function Landing({ url, onUrlChange, onSubmit, onClear, loading }: LandingProps) {
   return (
     <section>
       <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
@@ -49,7 +50,7 @@ export function Landing({ url, onUrlChange, onSubmit, loading }: LandingProps) {
           </p>
 
           <div className="mt-8 border-t border-[var(--line-strong)] pt-6">
-            <UrlForm url={url} onUrlChange={onUrlChange} onSubmit={onSubmit} loading={loading} />
+            <UrlForm url={url} onUrlChange={onUrlChange} onSubmit={onSubmit} onClear={onClear} loading={loading} />
           </div>
 
           {loading ? <ProbeSkeleton /> : null}
