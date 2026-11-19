@@ -14,7 +14,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   MediaStore saves, a foreground download service, job
   history, update checks, and in-app yt-dlp updates.
 - Tauri v2 Windows app with the same React UI/API and a bundled Node sidecar:
-  **97.6 MB** NSIS installer and **295.5 MB** installed, using the shared
+  **97.8 MiB** NSIS installer and **295.5 MB** installed, using the shared
   WebView2 runtime instead of bundling Chromium.
 - Windows downloads now get unique names in the Downloads folder and show a
   completion notification. A second launch focuses the running window, and
@@ -22,14 +22,20 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- Removed the bundled `ffprobe` binary, trimming about 162 MB from desktop
-  installs and about 45 MB from the installer and portable EXE. The finished
-  file's duration is now read from ffmpeg's input banner, and its size comes from
-  the file system.
-- Desktop builds now keep only the `en-US` Chromium locale, removing about 48 MB
-  of unused locale packs (about 8 MB from the compressed artifacts).
+- Removed the bundled `ffprobe` binary, trimming about 162 MB from packaged
+  installs and about 45 MB from the installer. The finished file's duration is
+  now read from ffmpeg's input banner, and its size comes from the file system.
+- Tauri is now the only Windows desktop shell. The Electron fallback and its
+  build tooling were removed after the Tauri app passed interactive testing.
 - Cookie-based sign-in is temporarily disabled and shown as “Coming soon” in
   Settings. Existing cookie settings are ignored until it returns.
+
+### Removed
+
+- Electron and electron-builder dependencies, `desktop/main.cjs`,
+  `electron-builder.yml`, and the `desktop:run`/`desktop:pack`/`desktop:dist`
+  scripts. The shared Node sidecar, server bundle, icon source, and third-party
+  notices remain because Tauri still uses them.
 
 ### Fixed
 

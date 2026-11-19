@@ -32,7 +32,9 @@
       "../web/dist/": "web/",
       "../bin/ffmpeg.exe": "bin/ffmpeg.exe",
       "../bin/yt-dlp.exe": "bin/yt-dlp.exe",
-      "../bin/qjs.exe": "bin/qjs.exe"
+      "../bin/qjs.exe": "bin/qjs.exe",
+      "../LICENSE": "LICENSE",
+      "../desktop/resources/THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     }
   }
 }

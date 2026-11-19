@@ -131,6 +131,10 @@ dependencies {
 // The Ktor server serves the React build from the APK assets.
 val copyWebAssets = tasks.register<Copy>("copyWebAssets") {
     from(rootProject.file("../../../web/dist"))
+    // Keep the license and third-party notices inside the APK and the web root
+    // served by Ktor.
+    from(rootProject.file("../../../LICENSE"))
+    from(rootProject.file("../../../desktop/resources/THIRD_PARTY_NOTICES.md"))
     into(layout.projectDirectory.dir("src/main/assets/web"))
 }
 tasks.named("preBuild").configure { dependsOn(copyWebAssets) }

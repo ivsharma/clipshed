@@ -2,7 +2,7 @@
 
 [← Back to the main README](../README.md)
 
-This is the exhaustive reference: architecture, the Tauri Windows and Android shells, project layout, platform registry, command reference, and troubleshooting. It now covers the post-migration code as well as the Electron fallback. For the quick overview, start with [README.md](../README.md).
+This is the exhaustive reference: architecture, the Tauri Windows and Android shells, project layout, platform registry, command reference, and troubleshooting. For the quick overview, start with [README.md](../README.md).
 
 **A local-first video range clipper.** Paste a link, pick MP4, MP3, or both, and fetch only the section you need — no full-hour download followed by a manual trim. Works with YouTube, Facebook, and Instagram links.
 
@@ -54,7 +54,6 @@ It also exposes a workflow that generic yt-dlp GUIs usually hide: **fast vs exac
 - Update yt-dlp from the settings dialog
 - **Windows desktop app** — Tauri 2 + WebView2 shell with a bundled Node sidecar; yt-dlp, ffmpeg, and QuickJS are bundled, and no Node install is needed at runtime
 - **Android app** — Tauri 2 shell with a Kotlin/Ktor server; downloads happen entirely on-device through `youtubedl-android`, and finished files are published to `Downloads/Clipshed`
-- **Electron fallback** — the original Electron build remains available while the Tauri builds are being signed and validated
 - Local-only; no account, no cloud, no telemetry
 
 ## How the range download works
@@ -128,7 +127,7 @@ powershell -ExecutionPolicy Bypass -File start.ps1
 
 The Windows app uses Tauri 2 for the native window and WebView2 for rendering.
 The existing Express server still does the download work, but it now runs as a
-bundled **Node sidecar** instead of inside Electron. This keeps the mature
+bundled **Node sidecar** instead of inside a Chromium-based wrapper. This keeps the mature
 yt-dlp/ffmpeg logic while removing Chromium from the package.
 
 ```powershell
@@ -156,7 +155,7 @@ port `43123`, so those Tauri behaviors must be disabled.
 The Tauri Windows build additionally needs the Rust MSVC toolchain and WebView2;
 WebView2 ships with Windows 11 and current Windows 10/Edge installs. The app uses
 `%LOCALAPPDATA%\Clipshed` for data and the managed yt-dlp copy, the same location
-as Electron. The full startup, window, plugin, download, and sidecar details are
+as earlier builds. The full startup, window, plugin, download, and sidecar details are
 in [Tauri Windows shell](#tauri-windows-shell-rust).
 
 ### Android build
@@ -187,38 +186,6 @@ the debug key with a warning. See [Signing](#signing).
 The full Android runtime model is in
 [Tauri Android shell](#tauri-android-shell-kotlin-and-ktor).
 
-### Electron fallback
-
-Electron remains available while the Tauri installers are unsigned. It uses the
-same server and UI, starts the API on a random loopback port, and opens a
-Chromium window. No Node installation is needed on the machine that runs the
-packaged app.
-
-```powershell
-npm run setup
-npm run desktop:run    # run from source
-npm run desktop:pack   # unpacked build: release/win-unpacked
-npm run desktop:dist   # NSIS installer + portable exe in release/
-```
-
-Packaged data lives in `%LOCALAPPDATA%\Clipshed`; development runs use
-`%LOCALAPPDATA%\Clipshed Dev`. On first launch, a managed copy of `yt-dlp.exe` is
-placed in the writable app home so the in-app yt-dlp update can replace it.
-ffmpeg and QuickJS run from the bundled resources. The portable build also uses
-this location, so it is no-install rather than fully portable.
-
-`desktop:dist` builds `Clipshed-Setup-<version>.exe` and
-`Clipshed-<version>-portable.exe`. Builds are unsigned unless a Windows
-code-signing certificate is configured in `electron-builder.yml`.
-
-The Electron bundle includes yt-dlp, ffmpeg, QuickJS, and the third-party
-notices. QuickJS is used because packaged users do not necessarily have Node on
-`PATH`; yt-dlp needs a JavaScript runtime for some YouTube challenges. See
-[THIRD_PARTY_NOTICES.md](../desktop/resources/THIRD_PARTY_NOTICES.md).
-
-The full Electron runtime model is in
-[Desktop app (Electron fallback)](#desktop-app-electron-fallback).
-
 ## Architecture
 
 Clipshed now has one frontend and three shells. The frontend always talks to a
@@ -231,21 +198,18 @@ flowchart LR
 
   AUI["React UI / Android WebView"] -->|REST + SSE| AAPI["Kotlin Ktor server :43123"]
   AAPI --> AYT["youtubedl-android"] --> AFF["bundled ffmpeg"] --> AMS["MediaStore Downloads/Clipshed"]
-
-  EUI["React UI / Chromium"] -->|REST + SSE| EAPI["Express in Electron main"]
-  EAPI --> EYT["yt-dlp.exe"] --> EFF["ffmpeg.exe"] --> ESAVE["Electron Downloads"]
 ```
 
 | Runtime | Shell | API server | Download engine | Output |
 |---|---|---|---|---|
 | Windows (primary) | Tauri 2 + WebView2 | Node 22+ sidecar (current build Node 26), fixed `127.0.0.1:43123` | bundled `yt-dlp.exe` + `ffmpeg.exe` | WebView2 download to the user's Downloads folder |
 | Android | Tauri 2 + system WebView | Kotlin/Ktor, fixed `127.0.0.1:43123` | `youtubedl-android` (Python, yt-dlp, ffmpeg, QuickJS) | MediaStore `Downloads/Clipshed` |
-| Electron fallback | Electron 45 | Express in the Electron main process, random port | bundled `yt-dlp.exe` + `ffmpeg.exe` | Electron download to the user's Downloads folder |
 
-- **Why Tauri:** Electron packages a complete Chromium runtime (~309 MB). Tauri
-  uses the system WebView (WebView2 on Windows, Android WebView on mobile), which
-  cuts the shell size and is the only practical way to reuse this UI on Android.
-  Tauri is a shell, not a download engine: yt-dlp and ffmpeg still do the work.
+- **Why Tauri:** a Chromium-based desktop shell would bundle a complete browser
+  runtime (~309 MB). Tauri uses the system WebView (WebView2 on Windows, Android
+  WebView on mobile), which cuts the shell size and is the only practical way to
+  reuse this UI on Android. Tauri is a shell, not a download engine: yt-dlp and
+  ffmpeg still do the work.
 - **Why Windows keeps Node:** the Express server, job manager, progress parsers,
   and yt-dlp error rules are mature and covered by tests. Running them as a
   sidecar reuses that code unchanged. Porting them to Rust is the optional
@@ -259,9 +223,9 @@ flowchart LR
   platform URL rules. Kotlin mirrors the same JSON shapes in `Models.kt` and
   `Platforms.kt`. The UI uses relative `/api` paths everywhere, so it does not
   care which server it is talking to.
-- **Fixed port:** Tauri's window URL is static, so both Tauri shells use
+- **Fixed port:** Tauri's window URL is static, so both shells use
   `127.0.0.1:43123`. The Windows shell prevents a second app instance from
-  competing for that port. Electron still asks the OS for a random port.
+  competing for that port.
 - **Jobs:** the Node and Kotlin servers both keep a small queue (one concurrent
   download by default), persist history as JSON, stream updates over SSE, and
   clean up finished files after a TTL.
@@ -290,7 +254,6 @@ flowchart LR
 | Android engine | `youtubedl-android` 0.18.1 (Python, yt-dlp, ffmpeg, QuickJS) |
 | Download engine | yt-dlp (bundled standalone on desktop) |
 | Media | ffmpeg (desktop binaries; `youtubedl-android` ffmpeg on Android) |
-| Electron fallback | Electron 45 + electron-builder |
 | Server bundle | esbuild (`server.cjs`) |
 | yt-dlp JS runtime | QuickJS-ng on packaged desktop; bundled QuickJS on Android; Node in development |
 | Progress | Server-Sent Events |
@@ -300,21 +263,20 @@ flowchart LR
 ## Tauri migration: what changed and why
 
 The migration kept the React UI and the HTTP/SSE contract. It replaced the
-Electron wrapper on Windows and added an Android app. The phase-by-phase history,
-measured sizes, and remaining migration checklist are in
+previous Chromium-based Windows shell and added an Android app. The
+phase-by-phase history, measured sizes, and remaining migration checklist are in
 [TAURI_MIGRATION.md](TAURI_MIGRATION.md). The important mental model is:
 
 ```text
-Windows:  React UI -> http://127.0.0.1:43123 -> Node sidecar -> yt-dlp.exe / ffmpeg.exe
-Android:  React UI -> http://127.0.0.1:43123 -> Kotlin/Ktor -> youtubedl-android
-Electron: React UI -> http://127.0.0.1:<random> -> Express in the main process
+Windows: React UI -> http://127.0.0.1:43123 -> Node sidecar -> yt-dlp.exe / ffmpeg.exe
+Android: React UI -> http://127.0.0.1:43123 -> Kotlin/Ktor -> youtubedl-android
 ```
 
 ### Shared UI contract
 
 The frontend still uses relative URLs (`/api/...`) and `EventSource`. It has no
 Tauri IPC dependency for its normal workflow. That is what makes it usable in a
-browser, Electron, and both Tauri shells without a second UI.
+browser and both Tauri shells without a second UI.
 
 `shared/src` remains the source of truth for the JSON shapes, validation, URL
 platforms, and formatting. The Kotlin server mirrors those shapes rather than
@@ -343,7 +305,7 @@ This is the shortest path through the code when you are tracing a bug:
    a terminal event. `JobPanel` switches from progress to the delivery view.
 5. **Save on desktop:** the delivery view follows `downloadUrl`
    (`/api/jobs/{id}/file?kind=...`). The server serves the file with an
-   attachment header; WebView2 or Electron hands it to the Downloads folder.
+   attachment header; WebView2 hands it to the Downloads folder.
 6. **Save on Android:** the delivery view calls
    `POST /api/jobs/{id}/save`; `JobManager.saveOutput()` calls
    `MediaStoreSaver`, copying the app-private file into `Downloads/Clipshed`.
@@ -386,7 +348,7 @@ gain. It remains an optional Phase 3 project.
 | `src-tauri/src/main.rs` | Tiny entrypoint; calls `app_lib::run()`, hides the console in release |
 | `src-tauri/src/lib.rs` | All Windows lifecycle: plugins, sidecar, window, downloads, links, shutdown |
 | `src-tauri/tauri.conf.json` | Shared product metadata, window base config, Android debug suffix |
-| `src-tauri/tauri.windows.conf.json` | Windows overlay: 1180×760 window, `create:false`, resources, `externalBin` |
+| `src-tauri/tauri.windows.conf.json` | Windows overlay: 1180×760 window, `create:false`, resources (including notices), `externalBin` |
 | `src-tauri/Cargo.toml` | Tauri 2 and Windows-only plugins |
 | `src-tauri/capabilities/default.json` | Desktop capability; only `core:default` |
 | `desktop/sidecar.cjs` | Starts the compiled Express server and handles SIGINT/SIGTERM |
@@ -471,6 +433,8 @@ left to WebView2. This is why the download handler can intercept them.
 | `resources\web\` | Built React UI |
 | `resources\server\server.cjs` | Compiled Node server |
 | `resources\server\sidecar.cjs` | Sidecar bootstrap |
+| `resources\LICENSE` | Clipshed MIT license |
+| `resources\THIRD_PARTY_NOTICES.md` | Third-party notices |
 
 The managed yt-dlp copy is “missing only”: an existing copy is never
 overwritten, so an in-app update survives restarts and reinstalls. Old
@@ -769,11 +733,11 @@ flags.
 
 | Change | Why | Where it lives |
 |---|---|---|
-| Electron Windows shell replaced by Tauri + WebView2 | Remove the bundled Chromium runtime and gain a mobile shell | `src-tauri/src/lib.rs`, `desktop/sidecar.cjs` |
+| Chromium-based Windows shell replaced by Tauri + WebView2 | Remove the bundled browser runtime and gain a mobile shell | `src-tauri/src/lib.rs`, `desktop/sidecar.cjs` |
 | Node server bundled as a sidecar on Windows | Reuse the tested Express/job/download code instead of rewriting it | `src-tauri/tauri.windows.conf.json`, `scripts/stage-tauri-windows.mjs` |
 | Android app added with Kotlin/Ktor and `youtubedl-android` | Mobile Node cannot spawn yt-dlp/ffmpeg; downloads must run on-device | `src-tauri/gen/android/.../server`, `web` |
 | Fixed local port `43123` for both Tauri shells | Tauri window URLs are static; one contract for Windows and Android | `lib.rs`, `ServerHost.kt` |
-| WebView2 download handler and completion toast | Match the Electron download flow without Electron's session API | `on_download` in `lib.rs` |
+| WebView2 download handler and completion toast | Match the previous desktop download flow without a custom session API | `on_download` in `lib.rs` |
 | Single-instance focus and navigation guard | Prevent a second server on the same port and keep the webview local | `lib.rs` plugins/handlers |
 | Android foreground download service | Android may suspend the app while a download is running | `DownloadService.kt` |
 | MediaStore save endpoint and Android-specific UI path | Scoped storage and a user-visible `Downloads/Clipshed` output | `MediaStoreSaver.kt`, `JobPanel.tsx` |
@@ -782,7 +746,6 @@ flags.
 | Theme-aware system bar icons | The app theme is independent of Android's system theme | `MainActivity.kt`, `theme.ts` |
 | External-link bridge | Android WebViews swallow `target="_blank"` links | `externalLinks.ts`, `MainActivity.kt` |
 | `ffprobe` removed | Duration is available from ffmpeg's input banner; trims ~162 MB from the packaged app | `server/src/media`, `Downloader.kt` |
-| Electron locales trimmed to `en-US` | Removes unused Chromium locale packs from the fallback | `electron-builder.yml` |
 | Cookie sign-in disabled | Temporary product decision; backend code is retained | `config.ts`, `SettingsStore.kt`, `SettingsDialog.tsx` |
 | Release keystore plumbing | Keep signing material out of git while making release builds reproducible | `build.gradle.kts`, `keystore.properties.example` |
 
@@ -854,227 +817,16 @@ Windows bundle config:
 
 This thumbprint is not present in the repository yet; add it only after the
 certificate is installed. Then rebuild and verify both `app.exe` and the NSIS
-installer with `signtool verify /pa /v`. The Electron fallback uses
-`electron-builder.yml`; it also has no signing configured.
+installer with `signtool verify /pa /v`.
 
-## Desktop app (Electron fallback)
+## Package size
 
-The Tauri Windows shell is now the primary desktop app. Electron is retained as
-a fallback while the Tauri installer is unsigned and the clean-machine pass is
-pending. This section documents the fallback only.
-
-The Electron app is the same Clipshed server and UI wrapped in Chromium. It
-exists so people can install Clipshed and run it without Node.js, a terminal, or
-`npm run dev`.
-
-### Startup sequence
-
-1. Electron starts `desktop/main.cjs`.
-2. The main process acquires a single-instance lock. A second launch focuses the
-   existing window and exits.
-3. It creates the app-home and Electron user-data directories.
-4. It stages a missing `yt-dlp.exe` in `%LOCALAPPDATA%\Clipshed\bin` and removes
-   obsolete ffmpeg/ffprobe/QuickJS copies staged by older builds. ffmpeg and
-   QuickJS stay in the bundled `resources\bin`.
-5. It sets the desktop environment variables, loads the compiled server bundle,
-   and calls `startLocalServer({ host: "127.0.0.1", port: 0 })`.
-6. The server starts the job manager, serves the API and built UI, and returns the
-   OS-assigned port.
-7. Electron opens a sandboxed window at `http://127.0.0.1:<port>`.
-
-The CLI and desktop shell share `server/src/server.ts`. `server/src/index.ts` is
-only the CLI entrypoint with signal handling and process-level logging.
-
-If startup fails, Electron shows an error dialog with the failure instead of
-leaving a blank window.
-
-### Runtime model
-
-- **Main process:** `desktop/main.cjs` owns the window, data paths, binary
-  staging, local server, download handling, notifications, and shutdown.
-- **Renderer:** the normal React app. It has `contextIsolation: true`,
-  `nodeIntegration: false`, and `sandbox: true`. There is no preload bridge; the
-  renderer talks to the local API over HTTP, just like the browser build.
-- **Server:** the compiled `server.cjs` bundle runs inside the Electron main
-  process. It is not a separate process. Active jobs are still child processes
-  (yt-dlp and ffmpeg), so cancellation and cleanup use the same process-tree
-  logic as the CLI.
-- **Port:** the desktop always asks the OS for a free loopback port. It does not
-  use `:3000`, so it cannot collide with the development server.
-- **Instance:** only one desktop instance is allowed. Starting the EXE again
-  restores and focuses the existing window.
-- **Shutdown:** `before-quit` cancels active jobs, closes the server, and waits up
-  to five seconds before forcing exit.
-
-### Data and binary locations
-
-| Path | Purpose |
-|---|---|
-| `%LOCALAPPDATA%\Clipshed\bin` | Managed, writable copy of yt-dlp |
-| `resources\bin` | Bundled ffmpeg, QuickJS, and the original yt-dlp |
-| `%LOCALAPPDATA%\Clipshed\data\jobs.json` | Job history |
-| `%LOCALAPPDATA%\Clipshed\data\downloads` | Completed files served to the browser |
-| `%LOCALAPPDATA%\Clipshed\data\tmp` | In-progress download files |
-| `%LOCALAPPDATA%\Clipshed\electron` | Electron cache and user data |
-| `%LOCALAPPDATA%\Clipshed Dev` | The same layout for an unpackaged `desktop:run` |
-
-Only yt-dlp is copied out of the installation because it is the only bundled tool
-that updates itself. `yt-dlp -U` needs a writable location, and the app runs as a
-normal user without elevation. ffmpeg and QuickJS execute directly from
-`resources\bin`.
-
-The managed yt-dlp copy is deliberately “missing only”: an existing copy is never
-overwritten. That is what lets an in-app yt-dlp update survive app restarts and
-reinstalls. It also means a newer Clipshed build will not replace an older
-managed yt-dlp automatically. Delete `%LOCALAPPDATA%\Clipshed\bin` to let the
-next launch stage the bundled version again.
-
-On upgrade from a build that staged all four binaries, the obsolete
-ffmpeg/ffprobe/QuickJS copies in the app home are removed at startup. This keeps
-the first launch of 1.0.0 from carrying a second copy of the media binaries.
-
-The uninstaller removes the installed program but leaves `%LOCALAPPDATA%\Clipshed`
-intact. Delete that folder manually for a clean reset.
-
-### Desktop environment
-
-The main process sets these variables before loading the server bundle:
-
-| Variable | Packaged value |
-|---|---|
-| `CLIPSHED_ROOT` | `%LOCALAPPDATA%\Clipshed` |
-| `DATA_DIR` | `%LOCALAPPDATA%\Clipshed\data` |
-| `BIN_DIR` | `%LOCALAPPDATA%\Clipshed\bin` (managed yt-dlp) |
-| `FFMPEG_DIR` | `resources\bin` |
-| `QJS_PATH` | `resources\bin\qjs.exe` |
-| `WEB_DIST` | `resources\web\dist` |
-| `CLIPSHED_VERSION` | `app.getVersion()`, e.g. `1.0.0` |
-| `NODE_ENV` | `production` |
-
-`HOST` and `PORT` are not used by the desktop shell; it passes host and port
-arguments directly to `startLocalServer()`. In source runs, `WEB_DIST` points at
-`web\dist`, the server bundle is `desktop\build\server.cjs`, and the app home is
-`%LOCALAPPDATA%\Clipshed Dev`.
-
-### Server bundle
-
-`npm run desktop:server` runs `scripts/build-desktop.mjs`, which bundles
-`server/src/server.ts` into `desktop/build/server.cjs` with esbuild. The Tauri
-Windows build packages that same bundle as `resources/server/server.cjs`, so
-there is only one Node server implementation for desktop.
-
-The bundle is CommonJS on purpose. Express and body-parser contain dynamic
-`require` calls that do not work in an ESM output. The build also replaces
-`import.meta.url` with a banner-backed `__CLIPSHED_MODULE_URL` constant so the
-shared config code can still resolve paths if no environment overrides are set.
-
-### Window, links, and security
-
-- External `http(s)` links open in the default browser.
-- In-window navigation away from the loopback origin is blocked.
-- The renderer cannot access Node or the filesystem directly.
-- F12 opens DevTools only in an unpackaged source run.
-- The local API has no authentication, matching the browser build. It binds to
-  `127.0.0.1` only; do not run Clipshed on a shared or untrusted machine.
-- The app has no accounts, telemetry, or upload path.
-
-### Downloads
-
-Electron handles the app's file links through `session.defaultSession`:
-
-- The save location is the Windows **Downloads** folder.
-- If the filename exists, Clipshed adds ` (1)`, ` (2)`, and so on.
-- On completion, a Windows notification says the file is ready. Clicking it opens
-  Explorer at the saved file.
-- The server's copy under `data\downloads` is temporary and is cleaned up by the
-  normal job-retention cleanup.
-
-### QuickJS and yt-dlp
-
-yt-dlp sometimes needs a JavaScript runtime to solve YouTube challenges.
-Packaged users do not necessarily have Node on `PATH`, so Clipshed bundles
-QuickJS-ng and passes it explicitly:
-
-```text
---js-runtimes quickjs:<Clipshed install>\resources\bin\qjs.exe
-```
-
-If `qjs.exe` is absent, the shared argument builder falls back to `node`. This
-keeps normal development working without QuickJS while making the packaged app
-self-contained. QuickJS is MIT-licensed; see
-[THIRD_PARTY_NOTICES.md](../desktop/resources/THIRD_PARTY_NOTICES.md).
-
-### Updating components
-
-- **yt-dlp:** Settings → **Update yt-dlp** runs `yt-dlp -U` against the managed
-  copy in `%LOCALAPPDATA%\Clipshed\bin`. It works in both the installer and
-  portable builds without an admin prompt.
-- **ffmpeg / QuickJS:** these run from the bundled resources; install a
-  new Clipshed build to change them.
-- **Clipshed itself:** there is no app auto-updater yet. `electron-builder`
-  generates `latest.yml` and `app-update.yml`, but no client code uses them.
-- Avoid updating yt-dlp while a download is running. Windows can lock an
-  executable that is currently in use.
-
-### Packaging
-
-The desktop packaging configuration lives in `electron-builder.yml`:
-
-| Setting | Value |
-|---|---|
-| App ID | `com.clipshed.app` |
-| Targets | Windows x64 NSIS installer and portable EXE |
-| Installer | Per-user, changeable install directory, desktop and Start Menu shortcuts |
-| Compression | `normal` |
-| ASAR | Enabled |
-| Output | `release/` (gitignored) |
-| Signing | None configured; SmartScreen may warn |
-
-Packaged resource map:
-
-| Source | Packaged location |
-|---|---|
-| `desktop/main.cjs`, `package.json` | `resources\app.asar` |
-| `desktop/build/server.cjs` | `resources\server\server.cjs` |
-| `web/dist` | `resources\web\dist` |
-| `bin/yt-dlp.exe`, `ffmpeg.exe`, `qjs.exe` | `resources\bin` |
-| `desktop/resources/icon.ico` | `resources\icon.ico` |
-| `LICENSE`, third-party notices | `resources\` |
-
-`desktop:verify` checks that all three binaries exist before packaging.
-`desktop:check` syntax-checks the Electron main file and build scripts and runs
-in CI. Packaging itself is local because CI does not carry the ignored binaries
-or download the Electron binary.
-
-The NSIS installer defaults to a per-user location, usually
-`%LOCALAPPDATA%\Programs\Clipshed`. The portable target is a self-extracting
-launcher: it installs nothing, but it still uses `%LOCALAPPDATA%\Clipshed` for
-data and the managed yt-dlp copy. It is “no-install”, not fully portable.
-
-### Package size
-
-Three primary artifacts are available.
-
-**Electron build (fallback):** about **498 MB** installed.
+**Windows Tauri build (primary):** about **295.5 MB** installed, with a
+**97.8 MiB** NSIS installer (measured November 19, 2026).
 
 | Part | Approx. size |
 |---|---:|
-| Electron/Chromium runtime and support files | 309 MB |
-| `ffmpeg.exe` | 162 MB |
-| `yt-dlp.exe` | 23 MB |
-| QuickJS | 2 MB |
-| App, server bundle, UI, notices | 2.4 MB |
-
-Electron builds keep only the `en-US` Chromium locale, which saves about 48 MB
-of unused locale packs. The compressed artifacts are about **179 MB** for the
-installer and **165 MB** for the portable EXE.
-
-**Tauri build (primary):** about **295.5 MB** installed, with a **97.8 MiB**
-NSIS installer (measured November 19, 2026).
-
-| Part | Approx. size |
-|---|---:|
-| Tauri shell (`app.exe`) | 11.4 MB |
+| Tauri shell (`app.exe`) | 12.0 MB |
 | Bundled `node.exe` sidecar | 95.5 MB |
 | `ffmpeg.exe` | 162.2 MB |
 | `yt-dlp.exe` | 22.5 MB |
@@ -1096,7 +848,7 @@ debug symbols and native debug metadata for that ABI. The exact size varies by
 ABI and build type; the files are under
 `src-tauri/gen/android/app/build/outputs/apk/`.
 
-Possible reductions for the Tauri build, roughly in order of effort versus
+Possible reductions for the Windows build, roughly in order of effort versus
 payoff:
 
 | Option | Approx. installed saving | Approx. artifact saving | Tradeoff |
@@ -1111,8 +863,8 @@ The best effort-to-payoff order is: switch to a shared ffmpeg build, then port
 the Node server to Rust. Those changes should bring the installed payload into
 roughly the **40–100 MB** range while keeping the app fully offline; ffmpeg
 remains the largest component. Removing `ffprobe` already cut about 162 MB from
-the Electron install; keeping only the `en-US` locale cut another 48 MB. Size
-and checksum claims should be re-measured after any further packaging changes.
+packaged installs. Size and checksum claims should be re-measured after any
+further packaging changes.
 
 ## Settings
 
@@ -1129,13 +881,12 @@ used while the UI is disabled. The flag exists in three places that must stay in
 sync: `SettingsDialog.tsx` (`COOKIES_ENABLED`), `server/src/config.ts`
 (`cookiesEnabled`), and `SettingsStore.kt` (`cookiesEnabled`).
 
-The theme is stored in a loopback cookie rather than `localStorage` because the
-Electron server used a random port each launch. Cookies are scoped by host, while
-`localStorage` is scoped by origin (host plus port) and would reset every time.
-The Tauri shells use a fixed port, so `localStorage` would now work, but the
-cookie is retained as the shared mechanism and is also read by the inline
-theme script before React starts. On Android, changing the theme also calls the
-native `ClipshedShell.setDarkTheme` bridge so the status-bar icons stay legible.
+The theme is stored in a loopback cookie rather than `localStorage` so it
+survives a changing loopback origin and can be read by the inline theme script
+before React starts. The Tauri shells use a fixed port, so `localStorage` would
+now work, but the cookie is retained as the shared mechanism. On Android,
+changing the theme also calls the native `ClipshedShell.setDarkTheme` bridge so
+the status-bar icons stay legible.
 
 The local setup panel shows the running Clipshed version, yt-dlp, ffmpeg, and the
 backend version. On Windows that last value is the Node version; on Android the
@@ -1154,7 +905,7 @@ clipshed/
   server/src/
     routes.ts             Node API endpoints
     app.ts                Express setup and UI serving
-    server.ts             Reusable local server for CLI and Electron
+    server.ts             Reusable local server for CLI and Tauri sidecar
     index.ts              CLI entrypoint and signal handling
     errors.ts             AppError and the Node yt-dlp error rules
     media/                args, probe, formats, progress, download
@@ -1186,24 +937,22 @@ clipshed/
       keystore.properties.example
     target/               Rust build output (gitignored)
   desktop/
-    main.cjs              Electron fallback lifecycle
+    sidecar.cjs           Starts the Node server for Tauri
     build/server.cjs      Generated Node bundle (gitignored)
-    resources/            Electron icon and third-party notices
+    resources/            Icon source and third-party notices
   scripts/
     setup-binaries.ps1    Downloads yt-dlp, ffmpeg, QuickJS
     build-desktop.mjs     Bundles the Node server with esbuild
     stage-tauri-windows.mjs  Stages node.exe for Tauri
     build-android.ps1     Builds Rust + Gradle and bypasses Windows symlinks
-    check-desktop.mjs     Verifies Electron binaries before packaging
+    check-desktop.mjs     Verifies the binaries Tauri packages
     check-version.mjs     Verifies npm/lockfile versions
     release.mjs           Bumps versions, promotes changelog, commits, tags
   docs/                   Screenshots, migration plan, this reference
   CHANGELOG.md            Release notes and version history
-  .github/workflows/      CI (TypeScript/Electron checks only)
+  .github/workflows/      CI (TypeScript checks only)
   bin/                    Local binaries (gitignored)
   data/                   CLI/browser jobs and files (gitignored)
-  release/                Electron artifacts (gitignored)
-  electron-builder.yml    Electron fallback packaging
   start.ps1               One-command local start
 ```
 
@@ -1249,20 +998,16 @@ Node routes/services, and the Kotlin models together.
 | `npm run tauri:android:debug` | Raw Tauri Android debug APK build |
 | `powershell -File scripts/build-android.ps1 -Target aarch64 -Release` | Windows-safe arm64 release APK build |
 | `powershell -File scripts/build-android.ps1 -Target x86_64` | Windows-safe x86_64 debug APK build |
-| `npm run desktop:run` | Build and launch the Electron fallback |
-| `npm run desktop:server` | Bundle the Node server for Electron/Tauri |
-| `npm run desktop:pack` | Build an unpacked Electron app in `release/` |
-| `npm run desktop:dist` | Build the Electron installer and portable app |
-| `npm run desktop:verify` | Check that all bundled Electron binaries exist |
-| `npm run desktop:check` | Syntax-check the Electron shell and build scripts |
+| `npm run desktop:server` | Bundle the Node server for the Tauri sidecar |
+| `npm run desktop:verify` | Check that the binaries Tauri packages exist |
 | `npm run release:patch` | Release a bugfix version, e.g. `1.0.1` |
 | `npm run release:minor` | Release a feature version, e.g. `1.1.0` |
 | `npm run release:major` | Release a breaking version, e.g. `2.0.0` |
 
-CI runs version checks, TypeScript typecheck, Electron shell checks, tests, the
-frontend build, and the Node server bundle on every push and pull request. CI
-does **not** build Tauri Windows or Android artifacts, because they need Rust,
-Android SDK/NDK, and the large media binaries. Those builds are currently local.
+CI runs version checks, TypeScript typecheck, tests, the frontend build, and the
+Node server bundle on every push and pull request. CI does **not** build Tauri
+Windows or Android artifacts, because they need Rust, Android SDK/NDK, and the
+large media binaries. Those builds are currently local.
 
 The Android wrapper requires `JAVA_HOME`, `ANDROID_HOME`, and `NDK_HOME`.
 `scripts/build-android.ps1` builds the Rust `.so`, copies it into `jniLibs`, and
@@ -1285,9 +1030,9 @@ versions and `v`-prefixed Git tags.
 ### Version source of truth
 
 `package.json` at the repository root is the canonical version for the npm
-workspaces, Electron, and CI. The workspace package versions and
-`package-lock.json` must match it. `npm run version:check` fails if they drift,
-and CI runs it on every push.
+workspaces and CI. The workspace package versions and `package-lock.json` must
+match it. `npm run version:check` fails if they drift, and CI runs it on every
+push.
 
 Tauri has its own version fields. `src-tauri/tauri.conf.json` and
 `src-tauri/Cargo.toml` must be updated with the same version before building
@@ -1298,14 +1043,6 @@ an older config version as invalid.
 
 Do **not** bump the version for every commit. Version numbers describe shipped
 builds. Commit SHAs identify individual pushes; Git tags identify releases.
-
-`desktop:dist` reads the root version automatically, so Electron artifact names
-follow the release without editing `electron-builder.yml`:
-
-```text
-Clipshed-Setup-1.1.0.exe
-Clipshed-1.1.0-portable.exe
-```
 
 Tauri artifact names come from `tauri.conf.json`:
 
@@ -1361,11 +1098,9 @@ Windows, Tauri reads it through `app.package_info()`; on Android, through
    powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Target aarch64 -Release
    ```
 
-   Optionally build the Electron fallback with `npm run desktop:dist`.
-
 7. Create a GitHub Release for the tag and attach the Tauri NSIS installer, the
-   arm64 APK, and their SHA-256 hashes. `release/` and `src-tauri/target/` are
-   gitignored; the release page is the distribution point, not the repository.
+   arm64 APK, and their SHA-256 hashes. `src-tauri/target/` is gitignored; the
+   release page is the distribution point, not the repository.
 
 Use `npm run release:patch` for hotfixes and `npm run release:major` only for
 breaking changes. `node scripts/release.mjs minor --dry-run` prints the next
@@ -1393,13 +1128,13 @@ Run `npm run setup` again. The app expects `bin/ffmpeg.exe` and (for packaged
 YouTube support) `bin/qjs.exe`.
 
 **Windows says the desktop app is unsafe**<br>
-Both Windows builds are currently unsigned. SmartScreen can warn on first launch.
-Use “More info → Run anyway”, or sign the build with a Windows code-signing
-certificate before distributing it widely. See [Signing](#signing).
+The Tauri Windows build is currently unsigned. SmartScreen can warn on first
+launch. Use “More info → Run anyway”, or sign the build with a Windows
+code-signing certificate before distributing it widely. See [Signing](#signing).
 
 **The desktop build says binaries are missing**<br>
-Run `npm run setup` before building. Electron bundles the three binaries from
-`bin/`. Tauri additionally needs `desktop/build/server.cjs` and the staged
+Run `npm run setup` before building. Tauri packages the three binaries from
+`bin/`, plus `desktop/build/server.cjs` and the staged
 `src-tauri/binaries/node-<triple>.exe`; `npm run tauri:windows:build` prepares
 both. If you run `tauri build` directly, run `npm run desktop:server` and
 `npm run tauri:stage` first.
@@ -1418,9 +1153,8 @@ is blank, the server is up but the web resource path is wrong. Rebuild with
 
 **A second Tauri launch does not focus the first window**<br>
 The single-instance plugin only catches the same application identifier. Check
-Task Manager for an older build still running on port 43123, and make sure you
-are launching the Tauri app rather than the Electron fallback. Stop the stale
-process and relaunch.
+Task Manager for an older build still running on port 43123, stop the stale
+process, and relaunch.
 
 **The completion notification does not appear**<br>
 The Windows toast is sent after a download finishes. Check Windows Settings →
@@ -1429,16 +1163,15 @@ try an installed build rather than a raw debug executable. The toast is a
 completion notice; it has no click action.
 
 **The desktop app shows old downloads or settings after switching builds**<br>
-The Tauri app, Electron installer, portable EXE, and source desktop run share
-`%LOCALAPPDATA%\Clipshed` (source Electron runs use `Clipshed Dev`). They
-intentionally share history and the managed yt-dlp copy. Close the app and delete
-the relevant app home to reset it.
+The installed Tauri app and source development runs share
+`%LOCALAPPDATA%\Clipshed` (source runs use that same path). They intentionally
+share history and the managed yt-dlp copy. Close the app and delete the relevant
+app home to reset it.
 
 **How do I reset the desktop app?**<br>
-Close Clipshed, then delete `%LOCALAPPDATA%\Clipshed\data`. For Electron, also
-delete `%LOCALAPPDATA%\Clipshed\electron`. Keep `bin` to avoid re-copying
-yt-dlp, or delete `bin` too to restore the yt-dlp version bundled with the app.
-Uninstalling does not remove `%LOCALAPPDATA%\Clipshed`.
+Close Clipshed, then delete `%LOCALAPPDATA%\Clipshed\data`. Keep `bin` to avoid
+re-copying yt-dlp, or delete `bin` too to restore the yt-dlp version bundled with
+the app. Uninstalling does not remove `%LOCALAPPDATA%\Clipshed`.
 
 **Update yt-dlp fails in the desktop app**<br>
 Close active downloads first; Windows can lock a running executable. Make sure
@@ -1446,9 +1179,8 @@ Close active downloads first; Windows can lock a running executable. Make sure
 runs as your normal user and does not need administrator rights.
 
 **The desktop EXE is much larger than expected**<br>
-The Tauri package includes Node, ffmpeg, yt-dlp, and QuickJS; the Electron
-fallback also includes Chromium. See [Package size](#package-size) for the
-breakdown and reduction options.
+The Tauri package includes Node, ffmpeg, yt-dlp, and QuickJS. See
+[Package size](#package-size) for the breakdown and reduction options.
 
 **Android build fails with “Creation symbolic link is not allowed”**<br>
 Windows refused the Rust `.so` symlink that Tauri creates in `jniLibs`. Use
@@ -1497,10 +1229,9 @@ troubleshooting steps will return when the feature is re-enabled.
 
 **Port 3000, 5173, or 43123 is already in use**<br>
 3000/5173 only affect the browser workflows; stop the other process or set
-`PORT` in `.env` for the server. Vite's port is in `web/vite.config.ts`. Electron
-asks Windows for a random loopback port, so it is unaffected. Both Tauri shells
-deliberately use `127.0.0.1:43123`; an unrelated process on that port will block
-startup, so close it before launching Clipshed.
+`PORT` in `.env` for the server. Vite's port is in `web/vite.config.ts`. Both
+Tauri shells deliberately use `127.0.0.1:43123`; an unrelated process on that
+port will block startup, so close it before launching Clipshed.
 
 **Downloads are slow**  
 Section downloads use ffmpeg's range processing, which can run around 2–3× realtime. A 5-minute clip may take a couple of minutes depending on your connection and whether it is 1080p/4K. Exact cut is slower because it re-encodes.
@@ -1529,8 +1260,7 @@ Section downloads use ffmpeg's range processing, which can run around 2–3× re
 - Cookie sign-in is disabled in the UI and both backends. Existing cookie
   settings are ignored.
 - The Tauri Windows package is still large because Node, ffmpeg, yt-dlp, and
-  QuickJS are bundled. The Electron fallback also bundles Chromium. See
-  [Package size](#package-size).
+  QuickJS are bundled. See [Package size](#package-size).
 - Files are cleaned up after 24 hours in the Node server or
   `JOB_TTL_MS` in `JobManager.kt`; the Node value follows
   `JOB_TTL_HOURS`, the Android value is currently fixed at 24 hours.
@@ -1562,7 +1292,6 @@ Issues and pull requests are welcome. Before opening a PR:
 npm run typecheck
 npm test
 npm run build
-npm run desktop:check
 ```
 
 If you touch the Rust or Kotlin shells, also run the relevant package build:
@@ -1582,7 +1311,7 @@ cookies.
 
 MIT — see [LICENSE](../LICENSE).
 
-Clipshed is not affiliated with YouTube, Instagram, Facebook, or any other platform. yt-dlp, ffmpeg, QuickJS, Tauri, Electron, Kotlin/Ktor, `youtubedl-android`, and their builds have their own licenses. Development downloads the media binaries during setup; the Windows and Android packages bundle them. `youtubedl-android` is GPLv3; review the notices before distributing the Android APK publicly. See [THIRD_PARTY_NOTICES.md](../desktop/resources/THIRD_PARTY_NOTICES.md).
+Clipshed is not affiliated with YouTube, Instagram, Facebook, or any other platform. yt-dlp, ffmpeg, QuickJS, Tauri, Kotlin/Ktor, `youtubedl-android`, and their builds have their own licenses. Development downloads the media binaries during setup; the Windows and Android packages bundle them. `youtubedl-android` is GPLv3; review the notices before distributing the Android APK publicly. See [THIRD_PARTY_NOTICES.md](../desktop/resources/THIRD_PARTY_NOTICES.md).
 
 ## Acknowledgements
 
@@ -1594,7 +1323,6 @@ Clipshed is not affiliated with YouTube, Instagram, Facebook, or any other platf
 - [Kotlin](https://kotlinlang.org/) and [Ktor](https://ktor.io/) — Android server
 - [youtubedl-android](https://github.com/yausername/youtubedl-android) — Android Python/yt-dlp/ffmpeg engine
 - [AndroidX WebKit](https://developer.android.com/jetpack/androidx/releases/webkit) — document-start scripts and WebView compatibility
-- [Electron](https://www.electronjs.org/) and [electron-builder](https://www.electron.build/) — fallback desktop shell and packaging
 - [QuickJS-ng](https://github.com/quickjs-ng/quickjs) — bundled JavaScript runtime for yt-dlp
 - React, Vite, Tailwind CSS, Express, Zod, Vitest, esbuild
 

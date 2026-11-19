@@ -1,12 +1,12 @@
 # Tauri v2 migration plan (Windows + Android)
 
-Status: Phase 1 complete for Android. Phase 2 complete for Windows. Phase 3 optional.
+Status: Phase 1 complete for Android. Phase 2 complete for Windows. Electron retired on 2026-11-19. Phase 3 optional.
 
 ## Goal
 
 One React UI and one API contract, shipped as:
 
-- a Windows desktop app without Electron;
+- a Tauri Windows desktop app;
 - a sideloadable Android APK that downloads on-device.
 
 Tauri v2 supplies the shell, WebView, installers, and mobile build tooling. It
@@ -224,14 +224,14 @@ Measured:
 
 | Part | Installed |
 |---|---:|
-| Tauri shell (`app.exe`) | 11.4 MB |
+| Tauri shell (`app.exe`) | 12.0 MB |
 | `node.exe` sidecar | 95.5 MB |
 | `ffmpeg.exe` | 162.2 MB |
 | `yt-dlp.exe` | 22.5 MB |
 | QuickJS | 2.1 MB |
 | Server bundle, web UI, notices | ~2.4 MB |
 | **Total** | **295.5 MB** |
-| NSIS installer | **97.6 MB** |
+| NSIS installer | **97.8 MiB** |
 
 Verified:
 
@@ -246,9 +246,14 @@ Verified:
 - `https://example.com` opens in the default browser while the app stays on its
   local page.
 
-Remaining before retiring Electron:
+Release work still outstanding:
 
 - The Windows installer needs Authenticode signing. See [Signing](#signing).
+- A physical arm64 phone pass and a clean Windows machine/VM pass remain.
+- The Electron fallback was removed on 2026-11-19 after the Tauri Windows app
+  and arm64 APK passed interactive testing; `desktop/sidecar.cjs`,
+  `desktop/build/server.cjs`, the icon source, and the third-party notices remain
+  because Tauri still uses them.
 
 ### Phase 3: optional Windows Rust backend
 
@@ -260,10 +265,8 @@ Android, because Android still needs Kotlin plus `youtubedl-android`.
 
 | Target | Size |
 |---|---:|
-| Windows Electron installed (en-US locale) | 497.8 MB |
-| Windows Electron installer | 178.6 MB |
 | **Windows Tauri installed** | **295.5 MB** |
-| **Windows Tauri NSIS installer** | **97.6 MB** |
+| **Windows Tauri NSIS installer** | **97.8 MiB** |
 | Windows Tauri + Rust backend (Phase 3) | ~200 MB |
 | Android arm64 release APK | 71.0 MB |
 | Android x86_64 release APK | 74.0 MB |
@@ -302,8 +305,8 @@ The Windows Tauri shell (Phase 2) needs no additional toolchain.
   responses between the Node and Kotlin servers.
 - The Windows Tauri app still ships a 95.5 MB Node sidecar. Phase 3 moves it to
   Rust and removes that runtime.
-- Electron remains the fallback until the Windows Tauri installer is code-signed
-  and the packaged build gets a final smoke test on a clean machine.
+- The Windows Tauri installer still needs Authenticode signing and a clean-machine
+  smoke test before public distribution.
 - Range-download progress is coarse on Android because ffmpeg performs the cut;
   improving it needs a separate progress parser.
 - The Android release APK and the Windows NSIS installer are currently signed

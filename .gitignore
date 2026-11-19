@@ -11,9 +11,8 @@ cookies.txt
 .env
 .env.local
 
-# Desktop build output
+# Tauri sidecar/server output
 desktop/build/
-release/
 
 # Logs / OS / editor noise
 *.log

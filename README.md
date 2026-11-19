@@ -18,7 +18,8 @@ Most downloaders fetch the entire video, then make you trim it afterward. Clipsh
 - **Fast or exact cut** — keyframe-aligned stream copy, or frame-accurate re-encode.
 - **Local and private** — yt-dlp and ffmpeg run on your machine. No account, no cloud, no uploads.
 - **Real job handling** — queue, live progress, cancellation, history, and cleanup.
-- **Windows desktop app** — an Electron build with yt-dlp, ffmpeg, and QuickJS bundled. No Node install or dev server on the target machine.
+- **Windows desktop app** - Tauri 2 + WebView2 with a bundled Node sidecar, yt-dlp, ffmpeg, and QuickJS. No Node install or dev server on the target machine.
+- **Android app** - Tauri 2 with a Kotlin/Ktor server and on-device `youtubedl-android` downloads saved to `Downloads/Clipshed`.
 
 ## Supported platforms
 
@@ -55,37 +56,12 @@ Open **http://127.0.0.1:3000**. Or use `start.ps1`.
 
 ## Windows desktop app
 
-Build a self-contained desktop app. The target PC does not need Node installed.
+Build a self-contained Tauri + WebView2 desktop app. It bundles the Node server
+as a sidecar, so the target PC does not need Node installed.
 
 ```powershell
 npm install
 npm run setup
-npm run desktop:run    # run the desktop shell from source
-npm run desktop:pack   # unpacked build in release/win-unpacked
-npm run desktop:dist   # installer + portable exe in release/
-```
-
-`desktop:dist` creates:
-
-- `Clipshed-Setup-<version>.exe` — per-user installer with Start Menu and desktop shortcuts
-- `Clipshed-<version>-portable.exe` — no-install portable build
-
-The desktop app stores settings, history, downloads, and a managed yt-dlp copy in
-`%LOCALAPPDATA%\Clipshed` (development builds use `Clipshed Dev`). ffmpeg and
-QuickJS run from the bundled resources. It starts the local API on a random
-loopback port and opens the real UI in an Electron window.
-
-Builds are currently unsigned, so Windows SmartScreen may warn on first launch.
-The installer is large because it includes Electron, ffmpeg, yt-dlp, and
-QuickJS. See the [desktop size breakdown](docs/README_TECHNICAL.md#package-size).
-
-### Tauri Windows build
-
-The Tauri build uses the shared WebView2 runtime and a bundled Node sidecar. It
-runs the same React UI and API and shares `%LOCALAPPDATA%\Clipshed` data with the
-Electron app.
-
-```powershell
 npm run tauri:windows:build
 ```
 
@@ -95,9 +71,20 @@ Output:
 src-tauri\target\release\bundle\nsis\Clipshed_1.1.0_x64-setup.exe
 ```
 
-Measured: **97.8 MB installer**, **295.5 MB installed**. Electron remains
-available through `desktop:dist` as a fallback until the Tauri installer is
-code-signed.
+For development:
+
+```powershell
+npm run tauri:windows:dev
+```
+
+The desktop app stores settings, history, server downloads, and a managed
+yt-dlp copy in `%LOCALAPPDATA%\Clipshed`. It starts the local API on
+`127.0.0.1:43123` and opens the same React UI in WebView2.
+
+Measured: **97.8 MB installer**, **295.5 MB installed**. Builds are currently
+unsigned, so Windows SmartScreen may warn on first launch. See the
+[technical reference](docs/README_TECHNICAL.md#package-size) for the size
+breakdown.
 
 ## Android app
 
@@ -133,7 +120,8 @@ Cookie-based sign-in is coming soon. Public videos work without cookies.
 The full reference is in [the technical README](docs/README_TECHNICAL.md):
 
 - [Architecture](docs/README_TECHNICAL.md#architecture)
-- [Desktop app (Electron)](docs/README_TECHNICAL.md#desktop-app-electron) — runtime model, data paths, packaging, updates, and package size
+- [Tauri Windows shell](docs/README_TECHNICAL.md#tauri-windows-shell-rust) - sidecar, window, downloads, notifications, and links
+- [Tauri Android shell](docs/README_TECHNICAL.md#tauri-android-shell-kotlin-and-ktor) - Ktor server, jobs, MediaStore, and WebView bridges
 - [Versioning and releases](docs/README_TECHNICAL.md#versioning-and-releases) — SemVer policy, release script, and tagging
 
 ## Limitations
@@ -142,7 +130,7 @@ The full reference is in [the technical README](docs/README_TECHNICAL.md):
 - Active live streams aren't supported; replays are.
 - Facebook and Instagram are experimental and may need a signed-in session (cookie sign-in is coming soon).
 - No subtitles, SponsorBlock, or compression presets yet.
-- Windows-first setup; the server is local-only and binds to `127.0.0.1`.
+- Windows desktop and Android builds; the local servers bind to `127.0.0.1`.
 
 ## Disclaimer
 

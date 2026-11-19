@@ -8,9 +8,12 @@ remain under their own licenses; the Clipshed MIT license does not replace them.
 | **yt-dlp** | https://github.com/yt-dlp/yt-dlp | Unlicense |
 | **FFmpeg** | https://github.com/yt-dlp/FFmpeg-Builds (GPL win64 build) | GPLv3 |
 | **QuickJS-ng** | https://github.com/quickjs-ng/quickjs | MIT |
-| **Electron / Chromium** | https://www.electronjs.org | MIT / BSD-style and third-party notices included by Electron |
+| **Tauri** | https://tauri.app | MIT / Apache-2.0 |
+| **youtubedl-android** | https://github.com/yausername/youtubedl-android | GPLv3 |
+| **Python** | https://www.python.org | PSF |
+| **Kotlin / Ktor** | https://kotlinlang.org, https://ktor.io | Apache-2.0 |
 
-The FFmpeg build is distributed under the GNU General Public License. Source and
-build information are available from the FFmpeg-Builds project linked above. The
-Electron package includes its own `LICENSE.electron.txt` and
-`LICENSES.chromium.html`, which ship with the desktop application.
+The FFmpeg build and `youtubedl-android` are distributed under the GNU General
+Public License. Source and build information are available from the projects
+linked above. Review these notices before distributing the Windows installer or
+Android APK publicly.
