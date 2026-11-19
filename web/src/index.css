@@ -227,6 +227,16 @@ dialog::backdrop {
   right: calc(1.25rem + var(--safe-area-inset-right));
 }
 
+.clear-action {
+  min-block-size: 24px;
+}
+
+@media (pointer: coarse) {
+  .clear-action {
+    min-block-size: 48px;
+  }
+}
+
 #root {
   min-height: 100vh;
 }

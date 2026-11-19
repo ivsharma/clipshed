@@ -70,7 +70,7 @@ export function UrlForm({ url, onUrlChange, onSubmit, onClear, loading }: UrlFor
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex min-h-6 items-center px-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-mute)] transition hover:text-[var(--red)]"
+              className="clear-action inline-flex items-center px-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-mute)] transition hover:text-[var(--red)]"
               title="Clear this video and start over"
             >
               Clear
