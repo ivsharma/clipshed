@@ -1,6 +1,6 @@
 {
   "name": "clipshed",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "Local-first video range clipper: fetch only the section you need as MP4, MP3, or both.",

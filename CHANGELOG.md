@@ -7,6 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-19
+
 ### Added
 
 - Android app built with Tauri v2: the shared React UI runs against a local Ktor
