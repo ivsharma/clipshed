@@ -281,7 +281,7 @@ IME-safe Enter handler in the time fields, and a polite live status for the
 toast. `legacy-scan web/src` reports no legacy-pattern findings, and the local
 landing page scores 100 for Lighthouse accessibility and best practices (the
 only remaining SEO finding is a missing `robots.txt`, irrelevant to the local
-desktop/mobile app).
+desktop/mobile app). The audit snapshot is [lighthouse.png](lighthouse.png).
 
 ## Tauri migration: what changed and why
 

@@ -9,6 +9,15 @@
 
 ![Clipshed range selection](docs/range-selection.png)
 
+## Lighthouse
+
+![Lighthouse report: 23/23 accessibility checks and 4/4 best-practices checks passed](docs/lighthouse.png)
+
+Lighthouse 13.4.1 audit of the landing page on **19 November 2026**:
+**23/23 accessibility checks** and **4/4 best-practices checks** passed — 100%
+in both categories. SEO is 5/6 only because the local development server has no
+`robots.txt`; the packaged app is not a public website.
+
 ## Why Clipshed?
 
 Most downloaders fetch the entire video, then make you trim it afterward. Clipshed treats the time range as the primary input: **15:00–20:00** means it downloads only that section.
