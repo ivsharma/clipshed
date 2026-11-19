@@ -19,6 +19,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Windows downloads now get unique names in the Downloads folder and show a
   completion notification. A second launch focuses the running window, and
   external links open in the default browser instead of inside the app.
+- Recent activity now lists all 100 saved jobs and has a **Clear all** action
+  that removes finished jobs and their app-private files. Files already saved to
+  Downloads are not affected.
 
 ### Changed
 

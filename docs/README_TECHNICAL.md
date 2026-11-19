@@ -557,9 +557,10 @@ mobile and should not be renamed without changing both servers and the UI.
   `snapshot` first.
 - Cancellation marks the job, updates the UI, and destroys the yt-dlp process
   plus any ffmpeg process held by the download handle.
-- History is `filesDir/jobs.json`, capped at 100 entries. Writes go to a temp
-  file and rename atomically. Jobs that were active when the process died are
-  marked failed with an `INTERRUPTED` error on the next load.
+- History is `filesDir/jobs.json`, capped at 100 entries. The API returns the
+  full 100 to the UI, so older entries remain visible and deletable. Writes go
+  to a temp file and rename atomically. Jobs that were active when the process
+  died are marked failed with an `INTERRUPTED` error on the next load.
 - Cleanup runs at startup and hourly. A job’s app-private temp files are removed
   on cancel; completed downloads are removed after 24 hours.
 
@@ -605,6 +606,19 @@ permissions and works on modern Android.
 The UI does not navigate to the file URL on Android. `JobPanel.tsx` detects
 Android and calls `POST /api/jobs/{id}/save`, showing a
 “Saved ... to Downloads/Clipshed” note. On desktop it keeps the normal file link.
+
+Saving is a **copy**, not a move: the app keeps its private copy so the history's
+download buttons and re-download flow continue to work. Android Settings counts
+the app-private file, not the shared `Downloads/Clipshed` copy, in “User data”.
+Deleting a job or using **Clear all** removes the app-private copy; the saved
+`Downloads/Clipshed` copy is owned by the user and stays until deleted from a
+file manager.
+
+The baseline app-private footprint is about **150 MB** even with no jobs, mostly
+the extracted `youtubedl-android` Python/ffmpeg/yt-dlp/QuickJS runtime under
+`no_backup/youtubedl-android`. Job files are additional. Android's **Clear
+storage** removes the runtime as well, so the next launch must extract/update it
+again.
 
 #### Settings, cookies, and updates
 

@@ -217,7 +217,7 @@ export class JobManager {
   listJobs(): Job[] {
     return [...this.jobs.values()]
       .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 50)
+      .slice(0, HISTORY_LIMIT)
       .map((job) => structuredClone(job));
   }
 

@@ -58,6 +58,7 @@ export default function App() {
 
   const [history, setHistory] = useState<Job[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -213,7 +214,7 @@ export default function App() {
   };
 
   const handleDelete = async (target: Job) => {
-    if (!window.confirm(`Delete "${target.title}" and its downloaded files?`)) return;
+    if (!window.confirm(`Delete "${target.title}" and its app-private files? Files already saved to Downloads stay there.`)) return;
     try {
       await api.deleteJob(target.id);
       if (job?.id === target.id) setJob(null);
@@ -221,6 +222,35 @@ export default function App() {
       setToast("Deleted");
     } catch (requestError) {
       setError(toUiError(requestError));
+    }
+  };
+
+  const handleClearHistory = async () => {
+    const removable = history.filter((item) => TERMINAL.has(item.status));
+    if (!removable.length) {
+      setToast("No finished jobs to clear");
+      return;
+    }
+    if (!window.confirm(`Delete ${removable.length} finished job${removable.length === 1 ? "" : "s"} and their app-private files? Files already saved to Downloads stay there.`)) {
+      return;
+    }
+
+    setClearingHistory(true);
+    let deleted = 0;
+    try {
+      for (const item of removable) {
+        try {
+          await api.deleteJob(item.id);
+          deleted += 1;
+        } catch (requestError) {
+          setError(toUiError(requestError));
+        }
+      }
+      if (job && TERMINAL.has(job.status)) setJob(null);
+      await refreshHistory();
+      if (deleted > 0) setToast(`Cleared ${deleted} job${deleted === 1 ? "" : "s"}`);
+    } finally {
+      setClearingHistory(false);
     }
   };
 
@@ -372,7 +402,9 @@ export default function App() {
           jobs={history}
           onRefresh={() => void refreshHistory()}
           onDelete={(target) => void handleDelete(target)}
+          onClearAll={() => void handleClearHistory()}
           refreshing={historyLoading}
+          clearing={clearingHistory}
         />
       </div>
 

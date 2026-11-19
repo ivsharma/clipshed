@@ -7,12 +7,16 @@ interface HistoryListProps {
   jobs: Job[];
   onRefresh: () => void;
   onDelete: (job: Job) => void;
+  onClearAll: () => void;
   refreshing: boolean;
+  clearing: boolean;
 }
 
 const shortKind = (job: Job): string => (job.kind === "both" ? "BOTH" : job.kind === "mp4" ? "MP4" : "MP3");
+const ACTIVE = new Set<Job["status"]>(["queued", "resolving", "running"]);
 
-export function HistoryList({ jobs, onRefresh, onDelete, refreshing }: HistoryListProps) {
+export function HistoryList({ jobs, onRefresh, onDelete, onClearAll, refreshing, clearing }: HistoryListProps) {
+  const canClear = jobs.some((job) => !ACTIVE.has(job.status));
   return (
     <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
       <div className="flex items-center justify-between border-b border-[var(--line-strong)] pb-2">
@@ -21,10 +25,24 @@ export function HistoryList({ jobs, onRefresh, onDelete, refreshing }: HistoryLi
           <h2 className="mono-label text-[var(--ink)]">Recent activity</h2>
           <span className="font-mono text-[11px] text-[var(--red)]">{String(jobs.length).padStart(2, "0")}</span>
         </div>
-        <button type="button" onClick={onRefresh} className="btn-ghost h-7 gap-1.5 px-2 font-mono text-[10px] uppercase tracking-[0.06em]" disabled={refreshing}>
-          <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-1">
+          {canClear ? (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="btn-ghost h-7 gap-1.5 px-2 font-mono text-[10px] uppercase tracking-[0.06em] hover:bg-[var(--red)] hover:text-[var(--on-red)]"
+              disabled={clearing}
+              title="Delete all finished jobs and their app-private files"
+            >
+              <Trash2 className="h-3 w-3" />
+              {clearing ? "Clearing…" : "Clear all"}
+            </button>
+          ) : null}
+          <button type="button" onClick={onRefresh} className="btn-ghost h-7 gap-1.5 px-2 font-mono text-[10px] uppercase tracking-[0.06em]" disabled={refreshing}>
+            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {jobs.length === 0 ? (

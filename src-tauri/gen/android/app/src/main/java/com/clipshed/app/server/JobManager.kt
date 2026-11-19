@@ -145,7 +145,7 @@ class JobManager(
 
     fun listJobs(): List<Job> = jobs.values
         .sortedByDescending { it.createdAt }
-        .take(50)
+        .take(HISTORY_LIMIT)
         .map(::snapshot)
 
     fun eventsFor(id: String): Flow<JobEvent> = events.filter { it.job.id == id }
