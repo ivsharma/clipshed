@@ -95,9 +95,9 @@ Output:
 src-tauri\target\release\bundle\nsis\Clipshed_1.1.0_x64-setup.exe
 ```
 
-Measured: **97.6 MB installer**, **295.5 MB installed**. Electron remains
-available through `desktop:dist` while Tauri download/notification polish is
-finished.
+Measured: **97.8 MB installer**, **295.5 MB installed**. Electron remains
+available through `desktop:dist` as a fallback until the Tauri installer is
+code-signed.
 
 ## Android app
 
@@ -116,9 +116,11 @@ Output:
 src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk
 ```
 
-The APK is currently signed with the Android debug key. See the
-[Tauri migration plan](docs/TAURI_MIGRATION.md) for build details, the Windows
-symlink workaround, measured sizes, and current limitations.
+The APK is debug-signed unless `src-tauri/gen/android/keystore.properties` points
+to a release keystore; see
+[Signing](docs/TAURI_MIGRATION.md#signing). The migration plan also covers build
+details, the Windows symlink workaround, measured sizes, and current
+limitations.
 
 ## Configuration
 

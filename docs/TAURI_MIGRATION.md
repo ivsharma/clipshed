@@ -119,8 +119,9 @@ Known Phase 1 limitations:
   yt-dlp's own progress.
 - Cookie-based sign-in is disabled for now and shown as “Coming soon”; public
   videos work without it.
-- The release APK is signed with the Android debug key. Replace the release
-  `signingConfig` with a real keystore before sharing it.
+- The release APK falls back to the Android debug key until
+  `src-tauri/gen/android/keystore.properties` points to a release keystore. See
+  [Signing](#signing).
 - Tauri warns that `com.clipshed.app` ends in `.app`; this only matters for
   macOS, which is not a target.
 
@@ -151,6 +152,44 @@ src-tauri/gen/android/app/build/outputs/apk/x86_64/release/app-x86_64-release.ap
 
 With Developer Mode enabled, the normal `npx tauri android build --apk --target
 aarch64` path works without the wrapper script.
+
+### Signing
+
+Neither artifact is signed for public distribution yet.
+
+**Android:** copy `src-tauri/gen/android/keystore.properties.example` to
+`src-tauri/gen/android/keystore.properties` and point `storeFile` at a release
+keystore. Both files are gitignored, and release builds use the key
+automatically. If the properties file is absent, the build warns and falls back
+to the debug key.
+
+```powershell
+keytool -genkeypair -v -keystore clipshed-release.jks -alias clipshed `
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Back up the keystore and passwords. Updates must be signed with the same key.
+
+**Windows:** the NSIS installer and `app.exe` are unsigned. Signing needs a
+CA-issued Authenticode certificate (OV/EV) or Azure Trusted Signing; a
+self-signed certificate does not remove SmartScreen warnings. Once the
+certificate is in the Windows certificate store, add its thumbprint to the
+Tauri Windows bundle config:
+
+```json
+{
+  "bundle": {
+    "windows": {
+      "certificateThumbprint": "<thumbprint>",
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com"
+    }
+  }
+}
+```
+
+Then rebuild and verify with `signtool verify /pa /v` on both the installer and
+`app.exe`.
 
 ### Phase 2: Windows Tauri shell — complete
 
@@ -209,7 +248,7 @@ Verified:
 
 Remaining before retiring Electron:
 
-- The NSIS installer is unsigned.
+- The Windows installer needs Authenticode signing. See [Signing](#signing).
 
 ### Phase 3: optional Windows Rust backend
 

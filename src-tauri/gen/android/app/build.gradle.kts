@@ -15,6 +15,19 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Release builds use this keystore when present. Without it, they fall back to
+// the debug key so local APKs can still be built.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (!hasReleaseKeystore) {
+    logger.warn("keystore.properties is missing; release APKs will use the debug signing key.")
+}
+
 android {
     compileSdk = 36
     namespace = "com.clipshed.app"
@@ -25,6 +38,22 @@ android {
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(
+                    keystoreProperties.getProperty("storeFile")
+                        ?: error("keystore.properties is missing storeFile"),
+                )
+                storePassword = keystoreProperties.getProperty("storePassword")
+                    ?: error("keystore.properties is missing storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                    ?: error("keystore.properties is missing keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                    ?: error("keystore.properties is missing keyPassword")
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -42,7 +71,7 @@ android {
         }
         getByName("release") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKeystore) "release" else "debug")
             optimization {
                enable = false
             }
