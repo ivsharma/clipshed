@@ -18,8 +18,8 @@
           var colors = { light: "#f1eee6", dark: "#1d1a16", "dark-contrast": "#050505" };
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[theme]);
-          if (window.ClipshedInsets && window.ClipshedInsets.setDarkTheme) {
-            window.ClipshedInsets.setDarkTheme(theme !== "light");
+          if (window.ClipshedShell && window.ClipshedShell.setDarkTheme) {
+            window.ClipshedShell.setDarkTheme(theme !== "light");
           }
         } catch (error) {
           // Storage can be unavailable; the app still falls back to the light theme.

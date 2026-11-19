@@ -1,11 +1,15 @@
 package com.clipshed.app
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
@@ -34,7 +38,7 @@ class MainActivity : TauriActivity() {
     super.onWebViewCreate(webView)
     contentWebView = webView
 
-    webView.addJavascriptInterface(SafeAreaBridge(), "ClipshedInsets")
+    webView.addJavascriptInterface(ShellBridge(), "ClipshedShell")
 
     if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
       WebViewCompat.addDocumentStartJavaScript(webView, SAFE_AREA_SCRIPT, setOf("*"))
@@ -70,7 +74,7 @@ class MainActivity : TauriActivity() {
     }
   }
 
-  private inner class SafeAreaBridge {
+  private inner class ShellBridge {
     @JavascriptInterface
     fun get(): String {
       val current = safeAreaInsets
@@ -91,6 +95,22 @@ class MainActivity : TauriActivity() {
         }
       }
     }
+
+    @JavascriptInterface
+    fun openExternal(url: String) {
+      val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return
+      if (uri.scheme != "http" && uri.scheme != "https") return
+      if (uri.host.isNullOrEmpty()) return
+
+      runOnUiThread {
+        val intent = Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)
+        try {
+          startActivity(intent)
+        } catch (error: ActivityNotFoundException) {
+          Toast.makeText(this@MainActivity, "No app can open this link", Toast.LENGTH_SHORT).show()
+        }
+      }
+    }
   }
 
   private data class SafeAreaInsets(
@@ -105,7 +125,7 @@ class MainActivity : TauriActivity() {
       (function () {
         function apply() {
           try {
-            var raw = window.ClipshedInsets && window.ClipshedInsets.get();
+            var raw = window.ClipshedShell && window.ClipshedShell.get();
             if (!raw) return;
             var insets = JSON.parse(raw);
             var style = document.documentElement.style;

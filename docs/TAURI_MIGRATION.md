@@ -86,6 +86,8 @@ Implemented in `src-tauri`. The Android server lives under
 - Edge-to-edge insets are reported to the UI as `--safe-area-inset-*` CSS
   variables, with fixed masks that keep scrolled content out of the status and
   navigation bars. Status-bar icon contrast follows the selected app theme.
+- External `http(s)` links are sent to the system browser through the Android
+  shell bridge; the WebView no longer swallows popup links.
 - Job history persists in `jobs.json`; active jobs interrupted by a restart are
   marked failed.
 - Launcher icons are generated from `desktop/resources/icon.svg` with
@@ -107,7 +109,8 @@ Verified on an Android 15 x86_64 emulator:
 - content stays below the status bar and above the navigation bar at the top
   and while scrolling, in both light and dark themes;
 - the settings sheet respects the same insets, and status-bar icons switch
-  between dark and light with the app theme.
+  between dark and light with the app theme;
+- an external test link opens Chrome while the app remains on its local page.
 
 Known Phase 1 limitations:
 

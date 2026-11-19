@@ -38,6 +38,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Android: content no longer draws under the status and navigation bars.
   Scrolled content is masked at the safe-area edges, and status-bar icon
   contrast follows the selected theme.
+- Android: external links, including the release link in Settings, now open in
+  the default browser instead of being ignored by the WebView.
 
 ## [1.1.0] - 2026-11-16
 

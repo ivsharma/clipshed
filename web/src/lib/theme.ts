@@ -39,7 +39,7 @@ function readCookie(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-interface AndroidInsetsBridge {
+interface AndroidShellBridge {
   setDarkTheme?: (dark: boolean) => void;
 }
 
@@ -49,7 +49,7 @@ export function applyTheme(theme: Theme): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
 
-  const bridge = (window as Window & { ClipshedInsets?: AndroidInsetsBridge }).ClipshedInsets;
+  const bridge = (window as Window & { ClipshedShell?: AndroidShellBridge }).ClipshedShell;
   bridge?.setDarkTheme?.(theme !== "light");
 }
 
